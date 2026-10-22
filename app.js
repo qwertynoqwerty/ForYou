@@ -1,5 +1,6 @@
 const canvas = document.getElementById('universe');
-const context = canvas.getContext('2d');
+const glyphRenderer = innerWidth < 600 ? new GlyphRenderer(canvas) : null;
+const context = glyphRenderer ? glyphRenderer.context : canvas.getContext('2d');
 const scene = document.getElementById('scene');
 const welcome = document.getElementById('welcome');
 const heading = document.querySelector('.scene-heading');
@@ -171,11 +172,12 @@ function drawScene(stage) {
   const headingTop = (view.landscape ? 8 : 20) + 'px';
   if (heading.style.top !== headingTop) heading.style.top = headingTop;
   if (stage.title < 1 || heading.style.opacity !== '1') heading.style.opacity = String(stage.title);
-  if (stage.details > 0 && (view.width >= 600 || orbitTime - lastPhraseFrame >= 1 / 30 || lastPhraseFrame === 0)) {
+  if (stage.details > 0) {
     context.clearRect(0, 0, innerWidth, innerHeight);
     const previousDelta = frameDelta;
     frameDelta = phraseElapsed;
     drawPhrases(stage.details, camera);
+    if (glyphRenderer) glyphRenderer.flush();
     frameDelta = previousDelta;
     phraseElapsed = 0;
     lastPhraseFrame = orbitTime;
@@ -195,10 +197,11 @@ function drawScene(stage) {
     button.style.setProperty('--sticker-scale', size.toFixed(3));
     const zIndex = String(Math.round(position.depth * 100));
     if (button.style.zIndex !== zIndex) button.style.zIndex = zIndex;
-    if (stage.details < 1 || button.style.opacity !== '1') {
-      button.style.opacity = String(stage.details);
+    const cardOpacity = stage.details * (position.visibility ?? 1);
+    if (stage.details < 1 || button.style.opacity !== String(cardOpacity)) {
+      button.style.opacity = String(cardOpacity);
       button.style.visibility = 'visible';
-      button.inert = stage.details < .95;
+      button.inert = cardOpacity < .5;
     }
   });
   const ready = stage.progress >= 1;
@@ -254,7 +257,7 @@ function drawPhrases(opacity, camera) {
     const response = 1 - Math.exp(-frameDelta * 4);
     phraseOpacity[index] = (phraseOpacity[index] || 0) + (desiredOpacity - (phraseOpacity[index] || 0)) * response;
     for (const { glyph, p, scale, rotation } of prepared) {
-      if (mobile) {
+      if (mobile || glyphRenderer) {
         const cosine = Math.cos(rotation) * pixelRatio;
         const sine = Math.sin(rotation) * pixelRatio;
         context.setTransform(cosine, sine, -sine, cosine, p.x * pixelRatio, p.y * pixelRatio);
@@ -270,7 +273,7 @@ function drawPhrases(opacity, camera) {
       context.restore();
     }
   }
-  if (mobile) context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  if (mobile || glyphRenderer) context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 }
 let memoryClosing = false;
 let memoryEntrance = null;

@@ -32,11 +32,14 @@ const SceneMath = (() => {
   function arrangeCards(view, time, yaw, count) {
     const half = view.cardSize / 2;
     if (view.width < 600 && view.portrait && !view.compact) {
-      const radius = Math.max(70, (view.width / 2 - half - 18) / (view.scale * 1.12));
+      const available = Math.max(40, view.height - 38 - view.cy);
+      const edgeRadius = available * view.distance / (view.scale * view.distance * Math.sin(view.pitch) + available * Math.cos(view.pitch));
+      const radius = (295 + Math.min(540, edgeRadius * .94)) / 2;
       return Array.from({ length: count }, (_, index) => {
         const angle = index / count * Math.PI * 2 + time * .035 + .3;
         const point = project(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, view, yaw);
-        return { x: point.x, y: point.y, depth: point.depth };
+        const horizontalFit = Math.min(1, (view.width / 2 - half - 14) / (radius * view.scale * 1.18));
+        return { x: view.cx + (point.x - view.cx) * horizontalFit, y: point.y, depth: point.depth };
       });
     }
     if (view.compact) {
