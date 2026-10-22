@@ -14,7 +14,7 @@ const SceneMath = (() => {
     const scale = Math.max(.18, Math.min(portrait ? w / 520 : w / 1100, h / (landscape ? 690 : 690), 2.4));
     const cy = h * (landscape ? .54 : portrait ? .48 : .56);
     const heartLift = landscape ? Math.max(40, (cy - 115) / (scale * .9) - 110) : portrait ? 200 : 135;
-    const headingY = landscape ? 10 : portrait ? clamp(h * .105, 24, 64) : 24;
+    const headingY = landscape ? 10 : portrait ? clamp(h * .07, 24, 64) : 24;
     return { width: w, height: h, scale, cx: w / 2, cy, pitch: portrait ? .48 : .43, distance: 2200, heartLift, headingY, cardSize, top: Math.min(h - 145, portrait ? Math.max(140, h * .17) : 120), bottom: h - 38, left: cardSize / 2 + 12, right: w - cardSize / 2 - 12, landscape, portrait, compact };
   }
   function project(x, y, z, view, yaw = 0) {
