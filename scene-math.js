@@ -11,12 +11,7 @@ const SceneMath = (() => {
     const landscape = w > h * 1.5 && h < 600;
     const compact = h < 300;
     const cardSize = compact ? (w < 600 ? 44 : 64) : landscape ? 72 : w < 600 ? clamp(w * .15, 46, 64) : 136;
-    let scale = Math.max(.18, Math.min(portrait ? w / 520 : w / 1100, h / (landscape ? 690 : 690), 2.4));
-    if (w < 600 && portrait && !compact) {
-      const orbitRadius = (295 + 540) / 2;
-      const projectedRadius = orbitRadius / Math.sqrt(1 - (orbitRadius * Math.cos(.48) / 2200) ** 2);
-      scale = Math.min(scale, (w / 2 - cardSize * .54 - 14) / projectedRadius);
-    }
+    const scale = Math.max(.18, Math.min(portrait ? w / 520 : w / 1100, h / (landscape ? 690 : 690), 2.4));
     const cy = h * (landscape ? .54 : portrait ? .48 : .56);
     const heartLift = landscape ? Math.max(40, (cy - 115) / (scale * .9) - 110) : portrait ? 200 : 135;
     const headingY = landscape ? 10 : portrait ? clamp(h * .07, 24, 64) : 24;
@@ -37,12 +32,12 @@ const SceneMath = (() => {
   function arrangeCards(view, time, yaw, count) {
     const half = view.cardSize / 2;
     if (view.width < 600 && view.portrait && !view.compact) {
-      const available = Math.max(40, view.height - 38 - view.cy);
-      const edgeRadius = available * view.distance / (view.scale * view.distance * Math.sin(view.pitch) + available * Math.cos(view.pitch));
-      const radius = (295 + Math.min(540, edgeRadius * .94)) / 2;
+      const orbitHeight = -110;
+      const available = view.width / 2 - view.cardSize * .54 - 14;
+      const radius = available * (view.distance + orbitHeight * Math.sin(view.pitch)) / Math.hypot(view.scale * view.distance, available * Math.cos(view.pitch));
       return Array.from({ length: count }, (_, index) => {
         const angle = index / count * Math.PI * 2 + time * .035 + .3;
-        const point = project(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, view, yaw);
+        const point = project(Math.cos(angle) * radius, orbitHeight, Math.sin(angle) * radius, view, yaw);
         return { x: point.x, y: point.y, depth: point.depth };
       });
     }
