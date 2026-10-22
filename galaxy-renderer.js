@@ -14,6 +14,10 @@ class GalaxyRenderer {
       uniform float uRatio;
       uniform float uTime;
       uniform float uProgress;
+      uniform vec2 uDiscRotation;
+      uniform vec2 uHeartRotation;
+      uniform vec2 uFlightRotation;
+      uniform float uPulse;
       uniform vec2 uYawRotation;
       uniform vec2 uPitchRotation;
       uniform float uLift;
@@ -22,6 +26,9 @@ class GalaxyRenderer {
       varying float vAlpha;
       vec2 rotatePoint(vec2 p, float a) {
         return vec2(p.x * cos(a) - p.y * sin(a), p.x * sin(a) + p.y * cos(a));
+      }
+      vec2 rotateShared(vec2 p, vec2 rotation) {
+        return vec2(p.x * rotation.x - p.y * rotation.y, p.x * rotation.y + p.y * rotation.x);
       }
       void main() {
         float seed = aMeta.x;
@@ -33,7 +40,7 @@ class GalaxyRenderer {
         vAlpha = .6;
         if (kind < .5) {
           float radius = length(p.xz);
-          p.xz = rotatePoint(p.xz, uTime * .105);
+          p.xz = rotateShared(p.xz, uDiscRotation);
           float arrival = smoothstep(.12 + radius * .0003 + seed * .06, .49 + radius * .00035 + seed * .06, uProgress);
           p.xz = rotatePoint(p.xz, (1.0 - arrival) * .65);
           p.y += (1.0 - arrival) * (seed - .5) * 80.0;
@@ -41,9 +48,9 @@ class GalaxyRenderer {
           vColor = mix(rose, vec3(1.0, .46, .48), aMeta.w * .88);
         } else if (kind < 1.5) {
           float heart = smoothstep(.46 + seed * .06, .88 + seed * .06, uProgress);
-          float pulse = 1.0 + sin(uTime * 1.5) * .018;
+          float pulse = uPulse;
           p.x *= pulse;
-          p.xz = rotatePoint(p.xz, uTime * .72);
+          p.xz = rotateShared(p.xz, uHeartRotation);
           p.y += uLift;
           vAlpha = heart * (.58 + aMeta.w * .65);
           vColor = mix(rose, vec3(1.0, .46, .48), .22 + aMeta.w * .65);
@@ -51,14 +58,14 @@ class GalaxyRenderer {
           vAlpha = .16 + aMeta.w * .45 + sin(seed * 60.0 + uTime * .35) * .08;
           vColor = mix(vec3(.45, .01, .02), vec3(1.0, .46, .48), aMeta.w);
         } else if (kind < 3.5) {
-          p.xz = rotatePoint(p.xz, uTime * .105);
+          p.xz = rotateShared(p.xz, uDiscRotation);
           vAlpha = smoothstep(.04, .58, uProgress) * (.15 + aMeta.w * .3);
           vColor = mix(rose, vec3(1.0, .46, .48), .1 + aMeta.w * .4);
         } else {
           float flight = smoothstep(0.0, 1.0, uProgress * 2.2 - seed * .35);
           p *= 1.0 + flight * 1.8;
           p.z += flight * 500.0;
-          p.xz = rotatePoint(p.xz, uTime * .05);
+          p.xz = rotateShared(p.xz, uFlightRotation);
           vAlpha = smoothstep(.0, .14, flight) * (1.0 - smoothstep(.35, .94, flight)) * (.3 + aMeta.w * .4);
           vColor = mix(rose, vec3(1.0, .46, .48), aMeta.w * .8);
         }
@@ -152,7 +159,7 @@ class GalaxyRenderer {
     gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 28, 0);
     gl.enableVertexAttribArray(meta);
     gl.vertexAttribPointer(meta, 4, gl.FLOAT, false, 28, 12);
-    this.uniforms = Object.fromEntries(['uViewport', 'uCenter', 'uScale', 'uRatio', 'uTime', 'uProgress', 'uYawRotation', 'uPitchRotation', 'uLift', 'uTint'].map(name => [name, gl.getUniformLocation(this.program, name)]));
+    this.uniforms = Object.fromEntries(['uViewport', 'uCenter', 'uScale', 'uRatio', 'uTime', 'uProgress', 'uDiscRotation', 'uHeartRotation', 'uFlightRotation', 'uPulse', 'uYawRotation', 'uPitchRotation', 'uLift', 'uTint'].map(name => [name, gl.getUniformLocation(this.program, name)]));
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     gl.disable(gl.DEPTH_TEST);
@@ -178,6 +185,10 @@ class GalaxyRenderer {
     gl.uniform1f(u.uRatio, this.ratio);
     gl.uniform1f(u.uTime, time);
     gl.uniform1f(u.uProgress, progress);
+    gl.uniform2f(u.uDiscRotation, Math.cos(time * .105), Math.sin(time * .105));
+    gl.uniform2f(u.uHeartRotation, Math.cos(time * .72), Math.sin(time * .72));
+    gl.uniform2f(u.uFlightRotation, Math.cos(time * .05), Math.sin(time * .05));
+    gl.uniform1f(u.uPulse, 1 + Math.sin(time * 1.5) * .018);
     gl.uniform2f(u.uYawRotation, Math.cos(yaw), Math.sin(yaw));
     gl.uniform2f(u.uPitchRotation, Math.cos(view.pitch), Math.sin(view.pitch));
     gl.uniform1f(u.uLift, view.heartLift);
