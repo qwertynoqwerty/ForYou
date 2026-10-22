@@ -111,7 +111,8 @@ class GalaxyRenderer {
       const seed = rng();
       if ((kind === 1) === heartOnly) values.push(x, y, z, seed, kind, size, brightness);
     };
-    const discCount = innerWidth < 600 ? 34000 : 54000;
+    const mobile = innerWidth < 600;
+    const discCount = mobile ? 18000 : 54000;
     for (let i = 0; i < discCount; i++) {
       const radius = 18 + Math.pow(rng(), .72) * 730;
       const arm = i % 3 * Math.PI * 2 / 3;
@@ -119,7 +120,7 @@ class GalaxyRenderer {
       const thickness = (rng() - .5) * (7 + 22 * Math.exp(-radius / 130));
       add(Math.cos(angle) * radius, thickness, Math.sin(angle) * radius, 0, 1.3 + rng() * 2.8, rng());
     }
-    for (let i = 0; i < 6500; i++) {
+    for (let i = 0; i < (mobile ? 3600 : 6500); i++) {
       const angle = rng() * Math.PI * 2;
       const cross = rng() * Math.PI * 2;
       const tube = .5 + rng() * 1.5;
