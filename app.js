@@ -99,11 +99,11 @@ catch (error) { console.error(error); showRenderError(); }
 function resize() {
   targetView = layout(innerWidth, innerHeight);
   if (!view) view = { ...targetView };
-  pixelRatio = Math.min(devicePixelRatio || 1, innerWidth < 600 || quality < .7 ? 1 : 1.5);
+  pixelRatio = Math.min(devicePixelRatio || 1, innerWidth < 600 ? 2 : quality < .7 ? 1 : 1.5);
   canvas.width = Math.round(innerWidth * pixelRatio);
   canvas.height = Math.round(innerHeight * pixelRatio);
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-  const particleRatio = innerWidth < 600 && quality < .7 ? .85 : pixelRatio;
+  const particleRatio = innerWidth < 600 ? Math.min(devicePixelRatio || 1, quality < .7 ? 1.25 : 1.5) : pixelRatio;
   if (renderer) renderer.resize(innerWidth, innerHeight, particleRatio);
   if (heartRenderer) heartRenderer.resize(innerWidth, innerHeight, particleRatio);
   document.body.style.setProperty('--card-size', targetView.cardSize + 'px');
@@ -231,7 +231,7 @@ function drawPhrases(opacity, camera) {
     const available = Math.max(40, view.height - 38 - view.cy);
     const edgeRadius = available * view.distance / (view.scale * view.distance * Math.sin(view.pitch) + available * Math.cos(view.pitch));
     const radius = ring === 2 ? Math.min(mobile ? 540 : 570, edgeRadius * .94) : (mobile ? 170 : 190) + ring * 125;
-    const angle = index % perRing * Math.PI * 2 / perRing + ring * .44 + orbitTime * .07;
+    const angle = index % perRing * Math.PI * 2 / perRing + ring * .44 + orbitTime * .105;
     const phrase = texts[index];
     if (Math.sin(angle + orbitYaw) < -.65 && (phraseOpacity[index] || 0) < .005) continue;
     const worldScale = (mobile ? 15 : 17) / 32;

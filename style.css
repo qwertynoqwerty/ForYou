@@ -153,12 +153,12 @@ body.red .scene-heading h2 { color: #ffafc2; }
 .access-dialog .eyebrow { margin-top: 8px; font-size: 12px; }
 .password-field input { font-family: Georgia, 'Times New Roman', serif; }
 .access-dialog .access-error { font-size: 13px; font-style: normal; }
-.memory-dialog { width: min(920px, calc(100% - 24px)); max-height: 94dvh; padding: 48px 36px 30px; overscroll-behavior: contain; scrollbar-width: thin; }
+.memory-dialog { width: min(920px, calc(100% - 24px)); max-height: 94dvh; padding: 30px 36px; overscroll-behavior: contain; scrollbar-width: thin; }
 .memory-dialog::backdrop { animation: memory-backdrop-in .24s ease both; }
 .memory-dialog.is-closing::backdrop { animation: memory-backdrop-out .22s ease both; }
 @keyframes memory-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes memory-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
-.memory-dialog .close { position: sticky; display: block; top: 0; margin: -40px -26px -4px auto; background: #1d0c18f5; z-index: 4; }
+.memory-dialog .close { position: absolute; display: block; top: 8px; right: 8px; margin: 0; background: #1d0c18f5; z-index: 4; }
 .memory-caption { display: block; margin: 0 auto 10px; color: #edb8c9; font-family: Georgia, 'Times New Roman', serif; font-size: 15px; letter-spacing: .8px; line-height: 1.4; }
 .memory-dialog h2 { font-size: clamp(32px, 5vw, 44px); overflow-wrap: anywhere; }
 .memory-dialog p { font-family: Georgia, 'Times New Roman', serif; font-size: 20px; line-height: 1.65; }
@@ -178,8 +178,8 @@ body.red .scene-heading h2 { color: #ffafc2; }
 .memory-dialog .media-status { font-family: Arial, sans-serif; font-size: 14px; margin: 12px 0; color: #edb9c7; }
 .media-status:empty { display: none; }
 @media (max-width: 600px) {
-  .memory-dialog { width: calc(100% - 16px); padding: 46px 18px 24px; border-radius: 20px; }
-  .memory-dialog .close { margin: -38px -10px 0 auto; }
+  .memory-dialog { width: calc(100% - 16px); padding: 24px 18px; border-radius: 20px; }
+  .memory-dialog .close { margin: 0; }
   .memory-dialog p { font-size: 18px; }
   .memory-dialog.has-album { width: calc(100% - 16px); }
   .memory-dialog.has-album h2 { font-size: 28px; margin-bottom: 8px; }
@@ -187,10 +187,10 @@ body.red .scene-heading h2 { color: #ffafc2; }
   .media-album { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
 }
 @media (max-width: 600px), (max-height: 600px) and (pointer: coarse) {
-  .memory-dialog, .memory-dialog.has-album { width: calc(100% - 28px); max-width: 560px; height: fit-content; max-height: calc(100dvh - 44px); margin: auto; border-radius: 24px; padding: 50px 18px 20px; overflow: hidden; }
+  .memory-dialog, .memory-dialog.has-album { width: calc(100% - 28px); max-width: 560px; height: fit-content; max-height: calc(100dvh - 44px); margin: auto; border-radius: 24px; padding: 24px 18px; overflow: hidden; }
   .memory-dialog .close { position: absolute; top: 4px; right: 4px; margin: 0; }
   .memory-dialog #memoryContent, .memory-dialog.has-album #memoryContent { display: flex; flex-direction: column; height: auto; min-height: 0; }
-  .memory-dialog .memory-caption { flex-shrink: 0; margin-bottom: 6px; font-size: 13px; }
+  .memory-dialog .memory-caption { padding-inline: 30px; flex-shrink: 0; margin-bottom: 6px; font-size: 13px; }
   .memory-dialog h2, .memory-dialog.has-album h2 { flex-shrink: 0; margin: 4px 0 10px; font-size: clamp(25px, 6vw, 32px); line-height: 1.15; }
   .memory-dialog #memoryText, .memory-dialog.has-album #memoryText { flex-shrink: 0; font-size: 16px; line-height: 1.4; margin: 0; }
   .memory-dialog .memory-media { flex: none; min-height: 0; display: block; margin-top: 16px; }

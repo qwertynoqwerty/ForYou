@@ -14,7 +14,7 @@ const SceneMath = (() => {
     const scale = Math.max(.18, Math.min(portrait ? w / 520 : w / 1100, h / (landscape ? 690 : 690), 2.4));
     const cy = h * (landscape ? .54 : portrait ? .48 : .56);
     const heartLift = landscape ? Math.max(40, (cy - 115) / (scale * .9) - 110) : portrait ? 200 : 135;
-    const headingY = landscape ? 10 : portrait ? clamp(h * .07, 24, 64) : 24;
+    const headingY = landscape ? 10 : portrait ? clamp(h * .105, 24, 64) : 24;
     return { width: w, height: h, scale, cx: w / 2, cy, pitch: portrait ? .48 : .43, distance: 2200, heartLift, headingY, cardSize, top: Math.min(h - 145, portrait ? Math.max(140, h * .17) : 120), bottom: h - 38, left: cardSize / 2 + 12, right: w - cardSize / 2 - 12, landscape, portrait, compact };
   }
   function project(x, y, z, view, yaw = 0) {
@@ -36,7 +36,7 @@ const SceneMath = (() => {
       const edgeRadius = available * view.distance / (view.scale * view.distance * Math.sin(view.pitch) + available * Math.cos(view.pitch));
       const radius = (295 + Math.min(540, edgeRadius * .94)) / 2;
       return Array.from({ length: count }, (_, index) => {
-        const angle = index / count * Math.PI * 2 + time * .07 + .3;
+        const angle = index / count * Math.PI * 2 + time * .105 + .3;
         const point = project(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, view, yaw);
         return { x: point.x, y: point.y, depth: point.depth };
       });
@@ -55,7 +55,7 @@ const SceneMath = (() => {
     const upper = Math.max(half + 3, view.top + half);
     const lower = Math.max(upper, view.bottom - half);
     const cards = Array.from({ length: count }, (_, index) => {
-      const angle = index / count * Math.PI * 2 + time * .07 + .3;
+      const angle = index / count * Math.PI * 2 + time * .105 + .3;
       const radiusX = Math.max(30, (view.width - view.cardSize) * .38 - 12);
       const radiusY = Math.max(20, (view.bottom - view.top - view.cardSize) * .39);
       const turn = angle + yaw;
