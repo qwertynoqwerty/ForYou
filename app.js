@@ -80,7 +80,7 @@ function makeTextures() {
   };
   const makeText = text => {
     const letters = Array.from(text, makeGlyph);
-    return { letters, width: letters.reduce((sum, glyph) => sum + glyph.advance, 0) };
+    return { letters, width: letters.reduce((sum, glyph) => sum + glyph.advance, 0), prepared: letters.map(glyph => ({ glyph, p: {}, scale: 0, rotation: 0 })) };
   };
   return { texts: LoveContent.phrases.map(makeText), mobileTexts: LoveContent.mobilePhrases.map(makeText) };
 }
@@ -100,8 +100,10 @@ function resize() {
   targetView = layout(innerWidth, innerHeight);
   if (!view) view = { ...targetView };
   pixelRatio = Math.min(devicePixelRatio || 1, innerWidth < 600 ? 2 : quality < .7 ? 1 : 1.5);
-  canvas.width = Math.round(innerWidth * pixelRatio);
-  canvas.height = Math.round(innerHeight * pixelRatio);
+  const pixelWidth = Math.round(innerWidth * pixelRatio);
+  const pixelHeight = Math.round(innerHeight * pixelRatio);
+  if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+  if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   const particleRatio = innerWidth < 600 ? Math.min(devicePixelRatio || 1, quality < .7 ? 1.25 : 1.5) : pixelRatio;
   if (renderer) renderer.resize(innerWidth, innerHeight, particleRatio);
@@ -122,7 +124,7 @@ function isMoving() {
 }
 function render(now) {
   frameId = 0;
-  if (innerWidth < 600 && lastTime && now - lastTime < (dialog.open || accessDialog.open ? 30 : 15)) { requestRender(); return; }
+  if (innerWidth < 600 && (dialog.open || accessDialog.open) && lastTime && now - lastTime < 30) { requestRender(); return; }
   const begin = performance.now();
   const interval = lastTime ? now - lastTime : 0;
   const delta = Math.min(interval / 1000, .04);
@@ -214,14 +216,18 @@ function drawPhrases(opacity, camera) {
   const yawSin = Math.sin(orbitYaw);
   const pitchCos = Math.cos(camera.pitch);
   const pitchSin = Math.sin(camera.pitch);
-  const phraseProject = mobile ? (x, y, z) => {
+  const phraseProject = mobile ? (x, y, z, cameraView, cameraYaw, result = {}) => {
     const rx = x * yawCos - z * yawSin;
     const rz = x * yawSin + z * yawCos;
     const depth = camera.distance / Math.max(900, camera.distance - rz * pitchCos + y * pitchSin);
-    return { x: camera.cx + rx * camera.scale * depth, y: camera.cy + (rz * pitchSin - y * pitchCos) * camera.scale * depth, depth };
+    result.x = camera.cx + rx * camera.scale * depth;
+    result.y = camera.cy + (rz * pitchSin - y * pitchCos) * camera.scale * depth;
+    result.depth = depth;
+    return result;
   } : project;
-  const texts = textures.texts.slice(0, 12);
-  const count = texts.length;
+  const texts = textures.texts;
+  const count = Math.min(12, texts.length);
+  const projectedNext = {};
   const perRing = 4;
   for (let index = 0; index < count; index++) {
     const ring = Math.floor(index / perRing);
@@ -235,20 +241,23 @@ function drawPhrases(opacity, camera) {
     const center = phraseProject(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, camera, orbitYaw);
     const tangent = phraseProject(Math.cos(angle + .008) * radius, 14, Math.sin(angle + .008) * radius, camera, orbitYaw);
     const direction = tangent.x >= center.x ? 1 : -1;
-    const prepared = [];
+    const prepared = phrase.prepared;
     let legibility = 1;
     let front = 1;
     let pen = -phrase.width / 2;
     const phraseReveal = smooth(.04 + ring * .06, .62 + ring * .06, opacity);
-    for (const glyph of phrase.letters) {
+    for (const item of prepared) {
+      const glyph = item.glyph;
       const a = angle + direction * (pen + glyph.advance / 2) * worldScale / radius;
       front = Math.min(front, smooth(-.08, .72, Math.sin(a + orbitYaw)));
-      const p = phraseProject(Math.cos(a) * radius, 14, Math.sin(a) * radius, camera, orbitYaw);
-      const next = phraseProject(Math.cos(a + direction * .008) * radius, 14, Math.sin(a + direction * .008) * radius, camera, orbitYaw);
+      const p = phraseProject(Math.cos(a) * radius, 14, Math.sin(a) * radius, camera, orbitYaw, item.p);
+      const next = phraseProject(Math.cos(a + direction * .008) * radius, 14, Math.sin(a + direction * .008) * radius, camera, orbitYaw, projectedNext);
       const scale = worldScale * view.scale * Math.min(p.depth, 1.4);
       const rotation = Math.atan2(next.y - p.y, next.x - p.x);
       legibility = Math.min(legibility, Math.cos(rotation));
-      prepared.push({ glyph, p, scale, rotation });
+      item.p = p;
+      item.scale = scale;
+      item.rotation = rotation;
       pen += glyph.advance;
     }
     const desiredOpacity = phraseReveal * front * smooth(.0, .45, legibility) * .78;
@@ -426,6 +435,10 @@ document.addEventListener('visibilitychange', () => {
 });
 for (const id of ['galaxy', 'heartLayer']) document.getElementById(id).addEventListener('webglcontextlost', event => { event.preventDefault(); paused = true; document.getElementById('audioStatus').textContent = 'Графическая сцена приостановлена. Обнови страницу, чтобы восстановить её.'; });
 textures = makeTextures();
+if (glyphRenderer) {
+  for (const phrase of textures.texts) for (const glyph of phrase.letters) glyphRenderer.register(glyph.image);
+  glyphRenderer.flush();
+}
 resize();
 try {
   if (renderer && heartRenderer && localStorage.getItem(accessStorageKey) === '1') {

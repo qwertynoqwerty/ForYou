@@ -159,8 +159,10 @@ class GalaxyRenderer {
     else gl.clearColor(.006, .001, .002, 1);
   }
   resize(width, height, ratio) {
-    this.canvas.width = Math.round(width * ratio);
-    this.canvas.height = Math.round(height * ratio);
+    const pixelWidth = Math.round(width * ratio);
+    const pixelHeight = Math.round(height * ratio);
+    if (this.canvas.width !== pixelWidth) this.canvas.width = pixelWidth;
+    if (this.canvas.height !== pixelHeight) this.canvas.height = pixelHeight;
     this.ratio = ratio;
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
   }

@@ -49,13 +49,17 @@ class GlyphRenderer {
     this.row = 0;
     this.dirty = false;
     this.vertices = new Float32Array(65536);
+    gl.bufferData(gl.ARRAY_BUFFER, this.vertices.byteLength, gl.DYNAMIC_DRAW);
     this.length = 0;
     this.transform = [1,0,0,1,0,0];
     this.context = {
       globalAlpha: 1,
       clearRect: () => { this.length = 0; },
-      setTransform: (...matrix) => { this.transform = matrix; },
-      drawImage: (...args) => this.drawGlyph(...args)
+      setTransform: (a,b,c,d,e,f) => {
+        const matrix = this.transform;
+        matrix[0]=a; matrix[1]=b; matrix[2]=c; matrix[3]=d; matrix[4]=e; matrix[5]=f;
+      },
+      drawImage: (image,x,y,width,height) => this.drawGlyph(image,x,y,width,height)
     };
   }
   register(image) {
@@ -74,9 +78,12 @@ class GlyphRenderer {
     if (this.context.globalAlpha < .002) return;
     const region = this.register(image);
     const [a,b,c,d,e,f] = this.transform;
-    const corners = [[x,y,0,0],[x+width,y,1,0],[x,y+height,0,1],[x,y+height,0,1],[x+width,y,1,0],[x+width,y+height,1,1]];
     if (this.length + 30 > this.vertices.length) throw new Error('Буфер подписей переполнен.');
-    for (const [px,py,u,v] of corners) {
+    for (let corner = 0; corner < 6; corner++) {
+      const u = corner === 1 || corner >= 4 ? 1 : 0;
+      const v = corner === 2 || corner === 3 || corner === 5 ? 1 : 0;
+      const px = u ? x + width : x;
+      const py = v ? y + height : y;
       this.vertices[this.length++] = a*px+c*py+e;
       this.vertices[this.length++] = b*px+d*py+f;
       this.vertices[this.length++] = (region.x+u*region.width)/this.atlas.width;
@@ -96,7 +103,7 @@ class GlyphRenderer {
       this.dirty = false;
     }
     gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
-    gl.bufferData(gl.ARRAY_BUFFER,this.vertices.subarray(0,this.length),gl.DYNAMIC_DRAW);
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,this.vertices.subarray(0,this.length));
     gl.uniform2f(this.viewport,this.canvas.width,this.canvas.height);
     gl.drawArrays(gl.TRIANGLES,0,this.length/5);
   }
