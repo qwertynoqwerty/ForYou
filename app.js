@@ -203,7 +203,6 @@ function drawScene(stage) {
     }
   });
   const ready = stage.progress >= 1;
-  if (ready && !mediaPreloadStarted) { mediaPreloadStarted = true; MemoryMedia.preload(); }
   const phase = ready ? 'ready' : 'revealing';
   if (scene.dataset.phase !== phase) scene.dataset.phase = phase;
   if (stage.progress >= .17 && !welcome.hidden) welcome.hidden = true;
@@ -308,6 +307,7 @@ function openMemory(index, trigger) {
 function start() {
   if (started) return;
   started = true;
+  if (!mediaPreloadStarted) { mediaPreloadStarted = true; MemoryMedia.preload(); }
   animated = true;
   paused = false;
   orbitTime = 0;
