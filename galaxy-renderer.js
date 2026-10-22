@@ -14,8 +14,8 @@ class GalaxyRenderer {
       uniform float uRatio;
       uniform float uTime;
       uniform float uProgress;
-      uniform float uYaw;
-      uniform float uPitch;
+      uniform vec2 uYawRotation;
+      uniform vec2 uPitchRotation;
       uniform float uLift;
       uniform float uTint;
       varying vec3 vColor;
@@ -62,14 +62,15 @@ class GalaxyRenderer {
           vAlpha = smoothstep(.0, .14, flight) * (1.0 - smoothstep(.35, .94, flight)) * (.3 + aMeta.w * .4);
           vColor = mix(rose, vec3(1.0, .46, .48), aMeta.w * .8);
         }
-        float cy = cos(uYaw);
-        float sy = sin(uYaw);
+        float cy = uYawRotation.x;
+        float sy = uYawRotation.y;
         float rx = p.x * cy - p.z * sy;
         float rz = p.x * sy + p.z * cy;
-        float pitch = uPitch;
-        float distance = max(900.0, 2200.0 - rz * cos(pitch) + p.y * sin(pitch));
+        float pitchCos = uPitchRotation.x;
+        float pitchSin = uPitchRotation.y;
+        float distance = max(900.0, 2200.0 - rz * pitchCos + p.y * pitchSin);
         float depth = 2200.0 / distance;
-        vec2 screen = uCenter + vec2(rx, rz * sin(pitch) - p.y * cos(pitch)) * uScale * depth;
+        vec2 screen = uCenter + vec2(rx, rz * pitchSin - p.y * pitchCos) * uScale * depth;
         gl_Position = vec4(screen.x / uViewport.x * 2.0 - 1.0, 1.0 - screen.y / uViewport.y * 2.0, 0.0, 1.0);
         gl_PointSize = clamp(aMeta.z * max(uScale, .9) * depth * uRatio, 1.2, 32.0);
         if (uProgress < 0.0 && (kind < 1.5 || kind > 2.5)) vAlpha = 0.0;
@@ -151,7 +152,7 @@ class GalaxyRenderer {
     gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 28, 0);
     gl.enableVertexAttribArray(meta);
     gl.vertexAttribPointer(meta, 4, gl.FLOAT, false, 28, 12);
-    this.uniforms = Object.fromEntries(['uViewport', 'uCenter', 'uScale', 'uRatio', 'uTime', 'uProgress', 'uYaw', 'uPitch', 'uLift', 'uTint'].map(name => [name, gl.getUniformLocation(this.program, name)]));
+    this.uniforms = Object.fromEntries(['uViewport', 'uCenter', 'uScale', 'uRatio', 'uTime', 'uProgress', 'uYawRotation', 'uPitchRotation', 'uLift', 'uTint'].map(name => [name, gl.getUniformLocation(this.program, name)]));
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     gl.disable(gl.DEPTH_TEST);
@@ -177,8 +178,8 @@ class GalaxyRenderer {
     gl.uniform1f(u.uRatio, this.ratio);
     gl.uniform1f(u.uTime, time);
     gl.uniform1f(u.uProgress, progress);
-    gl.uniform1f(u.uYaw, yaw);
-    gl.uniform1f(u.uPitch, view.pitch);
+    gl.uniform2f(u.uYawRotation, Math.cos(yaw), Math.sin(yaw));
+    gl.uniform2f(u.uPitchRotation, Math.cos(view.pitch), Math.sin(view.pitch));
     gl.uniform1f(u.uLift, view.heartLift);
     gl.uniform1f(u.uTint, tint);
     gl.drawArrays(gl.POINTS, 0, this.count);
