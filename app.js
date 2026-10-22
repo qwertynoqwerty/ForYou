@@ -10,6 +10,7 @@ const accessDialog = document.getElementById('accessDialog');
 const accessForm = document.getElementById('accessForm');
 const passwordInput = document.getElementById('passwordInput');
 const accessError = document.getElementById('accessError');
+const accessStorageKey = 'for-you:access-granted';
 const { clamp, smooth, layout, project, stages } = SceneMath;
 let renderer;
 let heartRenderer;
@@ -381,6 +382,11 @@ accessForm.addEventListener('submit', async event => {
   }
   accessTransition = true;
   document.getElementById('accessSubmit').disabled = true;
+  try {
+    localStorage.setItem(accessStorageKey, '1');
+  } catch {
+    console.warn('Браузер не разрешил запомнить вход на этом устройстве.');
+  }
   await waitForFade(accessDialog);
   accessDialog.close();
   start();
@@ -423,3 +429,11 @@ document.addEventListener('visibilitychange', () => {
 for (const id of ['galaxy', 'heartLayer']) document.getElementById(id).addEventListener('webglcontextlost', event => { event.preventDefault(); paused = true; document.getElementById('audioStatus').textContent = 'Графическая сцена приостановлена. Обнови страницу, чтобы восстановить её.'; });
 textures = makeTextures();
 resize();
+try {
+  if (renderer && heartRenderer && localStorage.getItem(accessStorageKey) === '1') {
+    welcome.hidden = true;
+    start();
+  }
+} catch {
+  console.warn('Браузер не разрешил прочитать сохранённый вход.');
+}
