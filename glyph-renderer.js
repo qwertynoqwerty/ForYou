@@ -37,7 +37,7 @@ class GlyphRenderer {
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
     gl.uniform1i(gl.getUniformLocation(this.program,'uAtlas'),0);
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
     gl.clearColor(0,0,0,0);
     this.atlas = document.createElement('canvas');
     this.atlas.width = 1024;
