@@ -36,7 +36,7 @@ const SceneMath = (() => {
       const edgeRadius = available * view.distance / (view.scale * view.distance * Math.sin(view.pitch) + available * Math.cos(view.pitch));
       const radius = (295 + Math.min(540, edgeRadius * .94)) / 2;
       return Array.from({ length: count }, (_, index) => {
-        const angle = index / count * Math.PI * 2 + time * .105 + .3;
+        const angle = index / count * Math.PI * 2 + Math.max(0, time - 5.2) * .105 - Math.PI / 2;
         const point = project(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, view, yaw);
         return { x: point.x, y: point.y, depth: point.depth };
       });
@@ -55,7 +55,7 @@ const SceneMath = (() => {
     const upper = Math.max(half + 3, view.top + half);
     const lower = Math.max(upper, view.bottom - half);
     const cards = Array.from({ length: count }, (_, index) => {
-      const angle = index / count * Math.PI * 2 + time * .105 + .3;
+      const angle = index / count * Math.PI * 2 + Math.max(0, time - 5.2) * .105 - Math.PI / 2;
       const radiusX = Math.max(30, (view.width - view.cardSize) * .38 - 12);
       const radiusY = Math.max(20, (view.bottom - view.top - view.cardSize) * .39);
       const turn = angle + yaw;
@@ -88,18 +88,6 @@ const SceneMath = (() => {
       return (state >>> 0) / 4294967296;
     };
   }
-  function cardArrival(view, position, index, count, details, seconds) {
-    const orbit = smooth(5.2, 6, seconds);
-    if (orbit === 1) return position;
-    const half = view.cardSize * .54;
-    const radiusX = Math.max(0, view.width / 2 - half - 18);
-    const radiusY = Math.max(0, Math.min(view.cy - view.top - half - 12, view.bottom - view.cy - half - 12));
-    const angle = index / count * Math.PI * 2 - Math.PI / 2;
-    const fly = 1 - Math.pow(1 - smooth(0, .7, details), 3);
-    const x = view.cx + Math.cos(angle) * radiusX * fly;
-    const y = view.cy + Math.sin(angle) * radiusY * fly;
-    return { x: x + (position.x - x) * orbit, y: y + (position.y - y) * orbit, depth: 1 + (position.depth - 1) * orbit };
-  }
-  return { clamp, smooth, layout, project, stages, arrangeCards, cardArrival, random };
+  return { clamp, smooth, layout, project, stages, arrangeCards, random };
 })();
 if (typeof module !== 'undefined') module.exports = SceneMath;

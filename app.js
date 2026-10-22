@@ -186,10 +186,11 @@ function drawScene(stage) {
   context.globalAlpha = 1;
   const positions = SceneMath.arrangeCards(view, orbitTime, orbitYaw, cards.length);
   cards.forEach((button, index) => {
-    const position = SceneMath.cardArrival(view, positions[index], index, cards.length, stage.details, introTime);
+    const position = positions[index];
+    const fly = 1 - Math.pow(1 - stage.details, 3);
     const current = cardMotion[index];
-    current.x = position.x;
-    current.y = position.y;
+    current.x = view.cx + (position.x - view.cx) * fly;
+    current.y = view.cy + (position.y - view.cy) * fly;
     const size = clamp(position.depth, .92, 1.08) * (.2 + stage.details * .8);
     button.style.transform = `translate3d(${current.x - view.cardSize / 2}px,${current.y - view.cardSize / 2}px,0)`;
     button.style.setProperty('--sticker-scale', size.toFixed(3));
