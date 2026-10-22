@@ -11,7 +11,12 @@ const SceneMath = (() => {
     const landscape = w > h * 1.5 && h < 600;
     const compact = h < 300;
     const cardSize = compact ? (w < 600 ? 44 : 64) : landscape ? 72 : w < 600 ? clamp(w * .15, 46, 64) : 136;
-    const scale = Math.max(.18, Math.min(portrait ? w / 520 : w / 1100, h / (landscape ? 690 : 690), 2.4));
+    let scale = Math.max(.18, Math.min(portrait ? w / 520 : w / 1100, h / (landscape ? 690 : 690), 2.4));
+    if (w < 600 && portrait && !compact) {
+      const orbitRadius = (295 + 540) / 2;
+      const projectedRadius = orbitRadius / Math.sqrt(1 - (orbitRadius * Math.cos(.48) / 2200) ** 2);
+      scale = Math.min(scale, (w / 2 - cardSize * .54 - 14) / projectedRadius);
+    }
     const cy = h * (landscape ? .54 : portrait ? .48 : .56);
     const heartLift = landscape ? Math.max(40, (cy - 115) / (scale * .9) - 110) : portrait ? 200 : 135;
     const headingY = landscape ? 10 : portrait ? clamp(h * .07, 24, 64) : 24;
