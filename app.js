@@ -94,7 +94,7 @@ catch (error) { console.error(error); showRenderError(); }
 function resize() {
   targetView = layout(innerWidth, innerHeight);
   if (!view) view = { ...targetView };
-  pixelRatio = Math.min(devicePixelRatio || 1, quality < .7 ? 1 : 1.5);
+  pixelRatio = Math.min(devicePixelRatio || 1, innerWidth < 600 || quality < .7 ? 1 : 1.5);
   canvas.width = Math.round(innerWidth * pixelRatio);
   canvas.height = Math.round(innerHeight * pixelRatio);
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
@@ -116,6 +116,7 @@ function isMoving() {
 }
 function render(now) {
   frameId = 0;
+  if (innerWidth < 600 && (dialog.open || accessDialog.open) && lastTime && now - lastTime < 30) { requestRender(); return; }
   const begin = performance.now();
   const interval = lastTime ? now - lastTime : 0;
   const delta = Math.min(interval / 1000, .04);
@@ -201,6 +202,7 @@ function drawPhrases(opacity, camera) {
     const radius = ring === 2 ? Math.min(mobile ? 540 : 570, edgeRadius * .94) : (mobile ? 170 : 190) + ring * 125;
     const angle = index % perRing * Math.PI * 2 / perRing + ring * .44 + orbitTime * .035;
     const phrase = texts[index];
+    if (Math.sin(angle + orbitYaw) < -.65 && (phraseOpacity[index] || 0) < .005) continue;
     const worldScale = (mobile ? 15 : 17) / 32;
     const center = project(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, camera, orbitYaw);
     const tangent = project(Math.cos(angle + .008) * radius, 14, Math.sin(angle + .008) * radius, camera, orbitYaw);
@@ -277,6 +279,7 @@ function start() {
   orbitYaw = 0;
   targetYaw = 0;
   scene.hidden = false;
+  MemoryMedia.preload();
   scene.dataset.phase = 'revealing';
   welcome.classList.add('leaving');
   welcome.inert = true;
