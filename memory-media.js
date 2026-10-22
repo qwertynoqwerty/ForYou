@@ -8,8 +8,13 @@ const MemoryMedia = (() => {
     const src = queue.shift();
     if (!src) return;
     const photo = document.createElement('img');
+    photo.decoding = 'async';
+    photo.fetchPriority = 'low';
     cache.set(src, photo);
-    const next = () => setTimeout(preload, 80);
+    const next = () => {
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(preload, { timeout: 3000 });
+      else setTimeout(preload, 600);
+    };
     photo.addEventListener('load', next, { once: true });
     photo.addEventListener('error', next, { once: true });
     photo.src = src;

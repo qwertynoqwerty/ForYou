@@ -35,6 +35,9 @@ let frameIntervals = [];
 let lastTrigger = null;
 let textures;
 let frameDelta = 0;
+let lastPhraseFrame = 0;
+let phraseElapsed = 0;
+let mediaPreloadStarted = false;
 const phraseOpacity = [];
 let accessTransition = false;
 const waitForFade = element => new Promise(resolve => {
@@ -98,8 +101,9 @@ function resize() {
   canvas.width = Math.round(innerWidth * pixelRatio);
   canvas.height = Math.round(innerHeight * pixelRatio);
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-  if (renderer) renderer.resize(innerWidth, innerHeight, pixelRatio);
-  if (heartRenderer) heartRenderer.resize(innerWidth, innerHeight, pixelRatio);
+  const particleRatio = innerWidth < 600 && quality < .7 ? .85 : pixelRatio;
+  if (renderer) renderer.resize(innerWidth, innerHeight, particleRatio);
+  if (heartRenderer) heartRenderer.resize(innerWidth, innerHeight, particleRatio);
   document.body.style.setProperty('--card-size', targetView.cardSize + 'px');
 
   requestRender();
@@ -116,7 +120,7 @@ function isMoving() {
 }
 function render(now) {
   frameId = 0;
-  if (innerWidth < 600 && (dialog.open || accessDialog.open) && lastTime && now - lastTime < 30) { requestRender(); return; }
+  if (innerWidth < 600 && lastTime && now - lastTime < (dialog.open || accessDialog.open ? 30 : 15)) { requestRender(); return; }
   const begin = performance.now();
   const interval = lastTime ? now - lastTime : 0;
   const delta = Math.min(interval / 1000, .04);
@@ -133,9 +137,9 @@ function render(now) {
     const blend = 1 - Math.exp(-Math.max(delta, .001) * 6);
     for (const key of ['scale', 'cx', 'cy', 'pitch', 'heartLift', 'headingY', 'cardSize']) view[key] += (targetView[key] - view[key]) * blend;
     for (const key of ['width', 'height', 'portrait', 'landscape', 'compact', 'top', 'bottom', 'left', 'right']) view[key] = targetView[key];
-    document.body.style.setProperty('--card-size', view.cardSize + 'px');
+    if (Math.abs(targetView.cardSize - view.cardSize) > .01) document.body.style.setProperty('--card-size', view.cardSize + 'px');
   }
-  context.clearRect(0, 0, innerWidth, innerHeight);
+  phraseElapsed += delta;
   const stage = stages(introTime, animated);
   if (renderer) renderer.draw(view, orbitTime, started ? stage.progress : -1, orbitYaw, tint);
   if (heartRenderer) heartRenderer.draw(view, orbitTime, started ? stage.progress : -1, orbitYaw, tint);
@@ -164,9 +168,18 @@ function render(now) {
 }
 function drawScene(stage) {
   const camera = view;
-  heading.style.top = (view.landscape ? 8 : 20) + 'px';
-  heading.style.opacity = String(stage.title);
-  if (stage.details > 0) drawPhrases(stage.details, camera);
+  const headingTop = (view.landscape ? 8 : 20) + 'px';
+  if (heading.style.top !== headingTop) heading.style.top = headingTop;
+  if (stage.title < 1 || heading.style.opacity !== '1') heading.style.opacity = String(stage.title);
+  if (stage.details > 0 && (view.width >= 600 || orbitTime - lastPhraseFrame >= 1 / 30 || lastPhraseFrame === 0)) {
+    context.clearRect(0, 0, innerWidth, innerHeight);
+    const previousDelta = frameDelta;
+    frameDelta = phraseElapsed;
+    drawPhrases(stage.details, camera);
+    frameDelta = previousDelta;
+    phraseElapsed = 0;
+    lastPhraseFrame = orbitTime;
+  }
   context.globalAlpha = 1;
   const positions = SceneMath.arrangeCards(view, orbitTime, orbitYaw, cards.length);
   cards.forEach((button, index) => {
@@ -180,18 +193,32 @@ function drawScene(stage) {
     const size = clamp(position.depth, .92, 1.08) * (.2 + stage.details * .8);
     button.style.transform = `translate3d(${current.x - view.cardSize / 2}px,${current.y - view.cardSize / 2}px,0)`;
     button.style.setProperty('--sticker-scale', size.toFixed(3));
-    button.style.setProperty('--label-shift', `${clamp(current.x, 90, view.width - 90) - current.x}px`);
-    button.style.zIndex = String(Math.round(position.depth * 100));
-    button.style.opacity = String(stage.details);
-    button.style.visibility = 'visible';
-    button.inert = stage.details < .95;
+    const zIndex = String(Math.round(position.depth * 100));
+    if (button.style.zIndex !== zIndex) button.style.zIndex = zIndex;
+    if (stage.details < 1 || button.style.opacity !== '1') {
+      button.style.opacity = String(stage.details);
+      button.style.visibility = 'visible';
+      button.inert = stage.details < .95;
+    }
   });
   const ready = stage.progress >= 1;
-  scene.dataset.phase = ready ? 'ready' : 'revealing';
+  if (ready && !mediaPreloadStarted) { mediaPreloadStarted = true; MemoryMedia.preload(); }
+  const phase = ready ? 'ready' : 'revealing';
+  if (scene.dataset.phase !== phase) scene.dataset.phase = phase;
   if (stage.progress >= .17 && !welcome.hidden) welcome.hidden = true;
 }
 function drawPhrases(opacity, camera) {
   const mobile = view.width < 600;
+  const yawCos = Math.cos(orbitYaw);
+  const yawSin = Math.sin(orbitYaw);
+  const pitchCos = Math.cos(camera.pitch);
+  const pitchSin = Math.sin(camera.pitch);
+  const phraseProject = mobile ? (x, y, z) => {
+    const rx = x * yawCos - z * yawSin;
+    const rz = x * yawSin + z * yawCos;
+    const depth = camera.distance / Math.max(900, camera.distance - rz * pitchCos + y * pitchSin);
+    return { x: camera.cx + rx * camera.scale * depth, y: camera.cy + (rz * pitchSin - y * pitchCos) * camera.scale * depth, depth };
+  } : project;
   const texts = textures.texts.slice(0, 12);
   const count = texts.length;
   const perRing = 4;
@@ -204,8 +231,8 @@ function drawPhrases(opacity, camera) {
     const phrase = texts[index];
     if (Math.sin(angle + orbitYaw) < -.65 && (phraseOpacity[index] || 0) < .005) continue;
     const worldScale = (mobile ? 15 : 17) / 32;
-    const center = project(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, camera, orbitYaw);
-    const tangent = project(Math.cos(angle + .008) * radius, 14, Math.sin(angle + .008) * radius, camera, orbitYaw);
+    const center = phraseProject(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, camera, orbitYaw);
+    const tangent = phraseProject(Math.cos(angle + .008) * radius, 14, Math.sin(angle + .008) * radius, camera, orbitYaw);
     const direction = tangent.x >= center.x ? 1 : -1;
     const prepared = [];
     let legibility = 1;
@@ -215,8 +242,8 @@ function drawPhrases(opacity, camera) {
     for (const glyph of phrase.letters) {
       const a = angle + direction * (pen + glyph.advance / 2) * worldScale / radius;
       front = Math.min(front, smooth(-.08, .72, Math.sin(a + orbitYaw)));
-      const p = project(Math.cos(a) * radius, 14, Math.sin(a) * radius, camera, orbitYaw);
-      const next = project(Math.cos(a + direction * .008) * radius, 14, Math.sin(a + direction * .008) * radius, camera, orbitYaw);
+      const p = phraseProject(Math.cos(a) * radius, 14, Math.sin(a) * radius, camera, orbitYaw);
+      const next = phraseProject(Math.cos(a + direction * .008) * radius, 14, Math.sin(a + direction * .008) * radius, camera, orbitYaw);
       const scale = worldScale * view.scale * Math.min(p.depth, 1.4);
       const rotation = Math.atan2(next.y - p.y, next.x - p.x);
       legibility = Math.min(legibility, Math.cos(rotation));
@@ -227,6 +254,14 @@ function drawPhrases(opacity, camera) {
     const response = 1 - Math.exp(-frameDelta * 4);
     phraseOpacity[index] = (phraseOpacity[index] || 0) + (desiredOpacity - (phraseOpacity[index] || 0)) * response;
     for (const { glyph, p, scale, rotation } of prepared) {
+      if (mobile) {
+        const cosine = Math.cos(rotation) * pixelRatio;
+        const sine = Math.sin(rotation) * pixelRatio;
+        context.setTransform(cosine, sine, -sine, cosine, p.x * pixelRatio, p.y * pixelRatio);
+        context.globalAlpha = phraseOpacity[index];
+        context.drawImage(glyph.image, -glyph.image.width * scale / 2, -glyph.image.height * scale / 2, glyph.image.width * scale, glyph.image.height * scale);
+        continue;
+      }
       context.save();
       context.translate(p.x, p.y);
       context.rotate(rotation);
@@ -235,6 +270,7 @@ function drawPhrases(opacity, camera) {
       context.restore();
     }
   }
+  if (mobile) context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 }
 let memoryClosing = false;
 let memoryEntrance = null;
@@ -279,7 +315,6 @@ function start() {
   orbitYaw = 0;
   targetYaw = 0;
   scene.hidden = false;
-  MemoryMedia.preload();
   scene.dataset.phase = 'revealing';
   welcome.classList.add('leaving');
   welcome.inert = true;

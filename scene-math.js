@@ -10,7 +10,7 @@ const SceneMath = (() => {
     const portrait = w < h * .85;
     const landscape = w > h * 1.5 && h < 600;
     const compact = h < 300;
-    const cardSize = compact ? (w < 600 ? 44 : 64) : landscape ? 72 : w < 600 ? clamp(w * .22, 64, 88) : 136;
+    const cardSize = compact ? (w < 600 ? 44 : 64) : landscape ? 72 : w < 600 ? clamp(w * .15, 46, 64) : 136;
     const scale = Math.max(.18, Math.min(portrait ? w / 520 : w / 1100, h / (landscape ? 690 : 690), 2.4));
     const cy = h * (landscape ? .54 : portrait ? .48 : .56);
     const heartLift = landscape ? Math.max(40, (cy - 115) / (scale * .9) - 110) : portrait ? 200 : 135;
@@ -31,6 +31,14 @@ const SceneMath = (() => {
   }
   function arrangeCards(view, time, yaw, count) {
     const half = view.cardSize / 2;
+    if (view.width < 600 && view.portrait && !view.compact) {
+      const radius = Math.max(70, (view.width / 2 - half - 18) / (view.scale * 1.12));
+      return Array.from({ length: count }, (_, index) => {
+        const angle = index / count * Math.PI * 2 + time * .035 + .3;
+        const point = project(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, view, yaw);
+        return { x: point.x, y: point.y, depth: point.depth };
+      });
+    }
     if (view.compact) {
       const columns = Math.max(1, Math.min(count, Math.floor((view.width - 12) / (view.cardSize + 8))));
       const rows = Math.ceil(count / columns);
