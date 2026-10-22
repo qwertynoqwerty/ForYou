@@ -88,6 +88,18 @@ const SceneMath = (() => {
       return (state >>> 0) / 4294967296;
     };
   }
-  return { clamp, smooth, layout, project, stages, arrangeCards, random };
+  function cardArrival(view, position, index, count, details, seconds) {
+    const orbit = smooth(5.2, 6, seconds);
+    if (orbit === 1) return position;
+    const half = view.cardSize * .54;
+    const radiusX = Math.max(0, view.width / 2 - half - 18);
+    const radiusY = Math.max(0, Math.min(view.cy - view.top - half - 12, view.bottom - view.cy - half - 12));
+    const angle = index / count * Math.PI * 2 - Math.PI / 2;
+    const fly = 1 - Math.pow(1 - smooth(0, .7, details), 3);
+    const x = view.cx + Math.cos(angle) * radiusX * fly;
+    const y = view.cy + Math.sin(angle) * radiusY * fly;
+    return { x: x + (position.x - x) * orbit, y: y + (position.y - y) * orbit, depth: 1 + (position.depth - 1) * orbit };
+  }
+  return { clamp, smooth, layout, project, stages, arrangeCards, cardArrival, random };
 })();
 if (typeof module !== 'undefined') module.exports = SceneMath;
