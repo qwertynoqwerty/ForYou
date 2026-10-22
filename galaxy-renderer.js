@@ -33,7 +33,7 @@ class GalaxyRenderer {
         vAlpha = .6;
         if (kind < .5) {
           float radius = length(p.xz);
-          p.xz = rotatePoint(p.xz, uTime * .035);
+          p.xz = rotatePoint(p.xz, uTime * .07);
           float arrival = smoothstep(.12 + radius * .0003 + seed * .06, .49 + radius * .00035 + seed * .06, uProgress);
           p.xz = rotatePoint(p.xz, (1.0 - arrival) * .65);
           p.y += (1.0 - arrival) * (seed - .5) * 80.0;
@@ -43,7 +43,7 @@ class GalaxyRenderer {
           float heart = smoothstep(.46 + seed * .06, .88 + seed * .06, uProgress);
           float pulse = 1.0 + sin(uTime * 1.5) * .018;
           p.x *= pulse;
-          p.xz = rotatePoint(p.xz, uTime * .24);
+          p.xz = rotatePoint(p.xz, uTime * .48);
           p.y += uLift;
           vAlpha = heart * (.58 + aMeta.w * .65);
           vColor = mix(rose, vec3(1.0, .46, .48), .22 + aMeta.w * .65);
@@ -51,7 +51,7 @@ class GalaxyRenderer {
           vAlpha = .16 + aMeta.w * .45 + sin(seed * 60.0 + uTime * .35) * .08;
           vColor = mix(vec3(.45, .01, .02), vec3(1.0, .46, .48), aMeta.w);
         } else if (kind < 3.5) {
-          p.xz = rotatePoint(p.xz, uTime * .035);
+          p.xz = rotatePoint(p.xz, uTime * .07);
           vAlpha = smoothstep(.04, .58, uProgress) * (.15 + aMeta.w * .3);
           vColor = mix(rose, vec3(1.0, .46, .48), .1 + aMeta.w * .4);
         } else {

@@ -36,7 +36,7 @@ const SceneMath = (() => {
       const edgeRadius = available * view.distance / (view.scale * view.distance * Math.sin(view.pitch) + available * Math.cos(view.pitch));
       const radius = (295 + Math.min(540, edgeRadius * .94)) / 2;
       return Array.from({ length: count }, (_, index) => {
-        const angle = index / count * Math.PI * 2 + time * .035 + .3;
+        const angle = index / count * Math.PI * 2 + time * .07 + .3;
         const point = project(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, view, yaw);
         return { x: point.x, y: point.y, depth: point.depth };
       });
@@ -55,7 +55,7 @@ const SceneMath = (() => {
     const upper = Math.max(half + 3, view.top + half);
     const lower = Math.max(upper, view.bottom - half);
     const cards = Array.from({ length: count }, (_, index) => {
-      const angle = index / count * Math.PI * 2 + time * .035 + .3;
+      const angle = index / count * Math.PI * 2 + time * .07 + .3;
       const radiusX = Math.max(30, (view.width - view.cardSize) * .38 - 12);
       const radiusY = Math.max(20, (view.bottom - view.top - view.cardSize) * .39);
       const turn = angle + yaw;

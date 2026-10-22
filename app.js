@@ -231,7 +231,7 @@ function drawPhrases(opacity, camera) {
     const available = Math.max(40, view.height - 38 - view.cy);
     const edgeRadius = available * view.distance / (view.scale * view.distance * Math.sin(view.pitch) + available * Math.cos(view.pitch));
     const radius = ring === 2 ? Math.min(mobile ? 540 : 570, edgeRadius * .94) : (mobile ? 170 : 190) + ring * 125;
-    const angle = index % perRing * Math.PI * 2 / perRing + ring * .44 + orbitTime * .035;
+    const angle = index % perRing * Math.PI * 2 / perRing + ring * .44 + orbitTime * .07;
     const phrase = texts[index];
     if (Math.sin(angle + orbitYaw) < -.65 && (phraseOpacity[index] || 0) < .005) continue;
     const worldScale = (mobile ? 15 : 17) / 32;
