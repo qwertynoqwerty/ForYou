@@ -38,8 +38,7 @@ const SceneMath = (() => {
       return Array.from({ length: count }, (_, index) => {
         const angle = index / count * Math.PI * 2 + time * .035 + .3;
         const point = project(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, view, yaw);
-        const horizontalFit = Math.min(1, (view.width / 2 - half - 14) / (radius * view.scale * 1.18));
-        return { x: view.cx + (point.x - view.cx) * horizontalFit, y: point.y, depth: point.depth };
+        return { x: point.x, y: point.y, depth: point.depth };
       });
     }
     if (view.compact) {
