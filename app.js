@@ -433,7 +433,10 @@ try {
   if (renderer && heartRenderer && localStorage.getItem(accessStorageKey) === '1') {
     welcome.hidden = true;
     start();
+  } else {
+    welcome.hidden = false;
   }
 } catch {
+  welcome.hidden = false;
   console.warn('Браузер не разрешил прочитать сохранённый вход.');
 }
