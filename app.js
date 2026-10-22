@@ -230,11 +230,11 @@ function drawPhrases(opacity, camera) {
     const ring = Math.floor(index / perRing);
     const available = Math.max(40, view.height - 38 - view.cy);
     const edgeRadius = available * view.distance / (view.scale * view.distance * Math.sin(view.pitch) + available * Math.cos(view.pitch));
-    const radius = ring === 2 ? Math.min(mobile ? 540 : 570, edgeRadius * .94) : (mobile ? 210 : 190) + ring * (mobile ? 140 : 125);
+    const radius = ring === 2 ? Math.min(mobile ? 540 : 570, edgeRadius * .94) : (mobile ? 170 : 190) + ring * 125;
     const angle = index % perRing * Math.PI * 2 / perRing + ring * .44 + orbitTime * .035;
     const phrase = texts[index];
     if (Math.sin(angle + orbitYaw) < -.65 && (phraseOpacity[index] || 0) < .005) continue;
-    const worldScale = (mobile && view.portrait ? 18 / view.scale : mobile ? 15 : 17) / 32;
+    const worldScale = (mobile ? 15 : 17) / 32;
     const center = phraseProject(Math.cos(angle) * radius, 14, Math.sin(angle) * radius, camera, orbitYaw);
     const tangent = phraseProject(Math.cos(angle + .008) * radius, 14, Math.sin(angle + .008) * radius, camera, orbitYaw);
     const direction = tangent.x >= center.x ? 1 : -1;
@@ -254,7 +254,7 @@ function drawPhrases(opacity, camera) {
       prepared.push({ glyph, p, scale, rotation });
       pen += glyph.advance;
     }
-    const desiredOpacity = phraseReveal * front * smooth(.0, .45, legibility) * (mobile ? .94 : .78);
+    const desiredOpacity = phraseReveal * front * smooth(.0, .45, legibility) * .78;
     const response = 1 - Math.exp(-frameDelta * 4);
     phraseOpacity[index] = (phraseOpacity[index] || 0) + (desiredOpacity - (phraseOpacity[index] || 0)) * response;
     for (const { glyph, p, scale, rotation } of prepared) {

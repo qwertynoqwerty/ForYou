@@ -11,13 +11,11 @@ const SceneMath = (() => {
     const landscape = w > h * 1.5 && h < 600;
     const compact = h < 300;
     const cardSize = compact ? (w < 600 ? 44 : 64) : landscape ? 72 : w < 600 ? clamp(w * .15, 46, 64) : 136;
-    const mobilePortrait = w < 600 && portrait && !compact;
-    const scale = Math.max(.18, Math.min(portrait ? w / (mobilePortrait ? 440 : 520) : w / 1100, h / (landscape ? 690 : 690), 2.4));
-    const cy = h * (landscape ? .54 : mobilePortrait ? .55 : portrait ? .48 : .56);
-    const pitch = mobilePortrait ? .85 : portrait ? .48 : .43;
+    const scale = Math.max(.18, Math.min(portrait ? w / 520 : w / 1100, h / (landscape ? 690 : 690), 2.4));
+    const cy = h * (landscape ? .54 : portrait ? .48 : .56);
+    const heartLift = landscape ? Math.max(40, (cy - 115) / (scale * .9) - 110) : portrait ? 200 : 135;
     const headingY = landscape ? 10 : portrait ? clamp(h * .07, 24, 64) : 24;
-    const heartLift = landscape ? Math.max(40, (cy - 115) / (scale * .9) - 110) : mobilePortrait ? Math.max(100, (cy - headingY - 140 - scale * 100) / (scale * Math.cos(pitch))) : portrait ? 200 : 135;
-    return { width: w, height: h, scale, cx: w / 2, cy, pitch, distance: 2200, heartLift, headingY, cardSize, top: Math.min(h - 145, portrait ? Math.max(140, h * .17) : 120), bottom: h - 38, left: cardSize / 2 + 12, right: w - cardSize / 2 - 12, landscape, portrait, compact };
+    return { width: w, height: h, scale, cx: w / 2, cy, pitch: portrait ? .48 : .43, distance: 2200, heartLift, headingY, cardSize, top: Math.min(h - 145, portrait ? Math.max(140, h * .17) : 120), bottom: h - 38, left: cardSize / 2 + 12, right: w - cardSize / 2 - 12, landscape, portrait, compact };
   }
   function project(x, y, z, view, yaw = 0) {
     const cosine = Math.cos(yaw);
