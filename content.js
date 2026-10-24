@@ -80,8 +80,8 @@ const LoveContent = {
     "transparent": false,
     "media": [
       {
-        "src": "assets/memories/gifts-together.webp",
-        "alt": "Четыре наших подарка в одной композиции"
+        "src": "assets/memories/gifts-together.webp?v=2",
+        "alt": "Наши подарки в одной композиции"
       }
     ]
   }
