@@ -1,10 +1,15 @@
 const LoveAudio = (() => {
   const status = document.getElementById('audioStatus');
   const voices = new Set();
+  const menuVoices = new Set();
+  const menuMelodies = [[523.25, 659.25, 392, 587.33, 523.25], [659.25, 587.33, 523.25, 392, 523.25]];
   const music = document.getElementById('backgroundMusic');
   let context;
   let output;
   let ambience;
+  let menuGain;
+  let menuTimer;
+  let menuPhrase = 0;
   let memoryOpen = false;
   let inUniverse = false;
   let failed = false;
@@ -26,6 +31,9 @@ const LoveAudio = (() => {
     ambience.gain.value = 0;
     context.createMediaElementSource(music).connect(ambience);
     ambience.connect(context.destination);
+    menuGain = context.createGain();
+    menuGain.gain.value = 0;
+    menuGain.connect(context.destination);
   }
 
   function tone(frequency, start, duration, level, destination, attack = .015, endFrequency = frequency) {
@@ -41,9 +49,34 @@ const LoveAudio = (() => {
     oscillator.connect(gain);
     gain.connect(destination);
     voices.add(oscillator);
-    oscillator.onended = () => { voices.delete(oscillator); oscillator.disconnect(); gain.disconnect(); };
+    oscillator.onended = () => { voices.delete(oscillator); menuVoices.delete(oscillator); oscillator.disconnect(); gain.disconnect(); };
     oscillator.start(start);
     oscillator.stop(start + duration + .05);
+    return oscillator;
+  }
+  function playMenuPhrase() {
+    if (inUniverse || document.hidden || context.state !== 'running') return;
+    const start = context.currentTime + .01;
+    const times = [0, 1.2, 2.4, 4.8, 6];
+    menuMelodies[menuPhrase++ % menuMelodies.length].forEach((frequency, index) => {
+      menuVoices.add(tone(frequency, start + times[index], 1.3, .075, menuGain, .025));
+      menuVoices.add(tone(frequency * 2, start + times[index], .35, .005, menuGain, .02));
+    });
+  }
+  function startMenu() {
+    if (menuTimer || inUniverse || document.hidden || context?.state !== 'running') return;
+    menuGain.gain.cancelScheduledValues(context.currentTime);
+    menuGain.gain.setTargetAtTime(.055, context.currentTime, .08);
+    playMenuPhrase();
+    menuTimer = setInterval(playMenuPhrase, 8000);
+  }
+  function stopMenu() {
+    clearInterval(menuTimer);
+    menuTimer = null;
+    if (!context) return;
+    menuGain.gain.cancelScheduledValues(context.currentTime);
+    menuGain.gain.setTargetAtTime(0, context.currentTime, .04);
+    for (const oscillator of menuVoices) { try { oscillator.stop(context.currentTime + .18); } catch {} }
   }
   async function startBackground() {
     if (!inUniverse || document.hidden || context?.state !== 'running' || !music.paused) return;
@@ -61,6 +94,7 @@ const LoveAudio = (() => {
     }
   }
   function stopBackground() {
+    stopMenu();
     music.pause();
     for (const oscillator of voices) { try { oscillator.stop(); } catch {} }
   }
@@ -70,7 +104,8 @@ const LoveAudio = (() => {
       createContext();
       if (context.state !== 'running') await context.resume();
       if (document.hidden) { await context.suspend(); return false; }
-      startBackground();
+      if (inUniverse) startBackground();
+      else startMenu();
       return context.state === 'running';
     } catch (error) {
       if (error.name !== 'NotAllowedError') fail(error);
@@ -86,7 +121,7 @@ const LoveAudio = (() => {
       tone(840, now, .045, .008, output, .002, 560);
     }
   }
-  function enterUniverse() { inUniverse = true; startBackground(); }
+  function enterUniverse() { inUniverse = true; stopMenu(); startBackground(); }
   function setMemoryOpen(value) {
     memoryOpen = value;
     if (context) ambience.gain.setTargetAtTime(value ? .035 : .065, context.currentTime, .5);
