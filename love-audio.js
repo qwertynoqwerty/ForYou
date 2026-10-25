@@ -8,6 +8,7 @@ const LoveAudio = (() => {
   let backgroundTimer;
   let chordIndex = 0;
   let memoryOpen = false;
+  let inUniverse = false;
   let failed = false;
   function fail(error) {
     failed = true;
@@ -54,18 +55,18 @@ const LoveAudio = (() => {
     tone(frequency * 3, start, .3, level * .035, output);
   }
   function playChord() {
-    if (document.hidden || context.state !== 'running') return;
-    const start = context.currentTime + .01;
+    if (!inUniverse || document.hidden || context.state !== 'running') return;
+    const start = context.currentTime + .05;
     const chord = chords[chordIndex++ % chords.length];
     chord.forEach((frequency, index) => {
-      tone(frequency, start + index * .12, 11, .018, ambience, .3);
-      tone(frequency * 1.002, start + index * .12, 11, .006, ambience, .3);
+      tone(frequency, start + index * .12, 11, .018, ambience, 2.4);
+      tone(frequency * 1.002, start + index * .12, 11, .006, ambience, 2.4);
     });
-    tone(chord[2] * 4, start + .15, 2.2, .018, ambience, .02);
+    tone(chord[2] * 4, start + 3.5, 2.2, .018, ambience, .02);
     tone(chord[1] * 4, start + 5.8, 2.4, .012, ambience, .02);
   }
   function startBackground() {
-    if (backgroundTimer || document.hidden || context?.state !== 'running') return;
+    if (backgroundTimer || !inUniverse || document.hidden || context?.state !== 'running') return;
     playChord();
     backgroundTimer = setInterval(playChord, 8000);
   }
@@ -88,14 +89,16 @@ const LoveAudio = (() => {
     }
   }
   async function play(kind) {
-    if (!await unlock()) return;
-    const now = context.currentTime + .015;
+    if (failed || document.hidden) return;
+    if (context?.state !== 'running' && !await unlock()) return;
+    const now = context.currentTime + .003;
     if (kind === 'press') {
       tone(420, now, .11, .07, output, .003, 280);
       tone(840, now, .045, .008, output, .002, 560);
     }
     if (kind === 'success') [523.25, 659.25, 783.99].forEach((note, index) => bell(note, now + index * .22));
   }
+  function enterUniverse() { inUniverse = true; startBackground(); }
   function setMemoryOpen(value) {
     memoryOpen = value;
     if (context) ambience.gain.setTargetAtTime(value ? .25 : .55, context.currentTime, .5);
@@ -121,5 +124,5 @@ const LoveAudio = (() => {
       if (context) context.suspend().catch(fail);
     } else if (context) unlock();
   });
-  return { play, setMemoryOpen };
+  return { play, enterUniverse, setMemoryOpen };
 })();

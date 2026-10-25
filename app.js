@@ -318,6 +318,7 @@ function openMemory(index, trigger) {
 function start() {
   if (started) return;
   started = true;
+  LoveAudio.enterUniverse();
   if (!mediaPreloadStarted) { mediaPreloadStarted = true; MemoryMedia.preload(); }
   animated = true;
   paused = false;
