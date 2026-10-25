@@ -1,13 +1,10 @@
 const LoveAudio = (() => {
   const status = document.getElementById('audioStatus');
   const voices = new Set();
-  const chords = [[261.63, 329.63, 392, 440], [174.61, 261.63, 349.23, 440], [220, 293.66, 349.23, 440], [196, 293.66, 392, 493.88]];
-  const melodies = [[523.25, 659.25, 783.99, 659.25, 587.33, 659.25, 523.25, null], [659.25, 698.46, 880, 783.99, 659.25, 587.33, 523.25, null], [587.33, 698.46, 880, 698.46, 659.25, 587.33, 523.25, null], [493.88, 587.33, 783.99, 659.25, 587.33, 493.88, 523.25, null]];
+  const music = document.getElementById('backgroundMusic');
   let context;
   let output;
   let ambience;
-  let backgroundTimer;
-  let chordIndex = 0;
   let memoryOpen = false;
   let inUniverse = false;
   let failed = false;
@@ -26,13 +23,11 @@ const LoveAudio = (() => {
     output.gain.value = .65;
     output.connect(context.destination);
     ambience = context.createGain();
-    ambience.gain.value = memoryOpen ? .25 : .55;
-    const filter = context.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 4200;
-    ambience.connect(filter);
-    filter.connect(output);
+    ambience.gain.value = 0;
+    context.createMediaElementSource(music).connect(ambience);
+    ambience.connect(context.destination);
   }
+
   function tone(frequency, start, duration, level, destination, attack = .015, endFrequency = frequency) {
     const oscillator = context.createOscillator();
     const gain = context.createGain();
@@ -50,32 +45,23 @@ const LoveAudio = (() => {
     oscillator.start(start);
     oscillator.stop(start + duration + .05);
   }
-  function musicBox(frequency, start, level) {
-    tone(frequency, start, 1.45, level, ambience, .009);
-    tone(frequency * 2, start, .55, level * .12, ambience, .006);
-    tone(frequency * 3, start, .2, level * .018, ambience, .004);
-  }
-  function playPhrase() {
-    if (!inUniverse || document.hidden || context.state !== 'running') return;
-    const start = context.currentTime + .01;
-    const index = chordIndex++ % chords.length;
-    const chord = chords[index];
-    chord.forEach((frequency, step) => {
-      tone(frequency, start + step * .025, 4.2, .008, ambience, .06);
-      musicBox(frequency * 2, start + step * .5, .014);
-    });
-    melodies[index].forEach((frequency, step) => {
-      if (frequency) musicBox(frequency, start + step * .5, step === 0 ? .08 : .065);
-    });
-  }
-  function startBackground() {
-    if (backgroundTimer || !inUniverse || document.hidden || context?.state !== 'running') return;
-    playPhrase();
-    backgroundTimer = setInterval(playPhrase, 4000);
+  async function startBackground() {
+    if (!inUniverse || document.hidden || context?.state !== 'running' || !music.paused) return;
+    try {
+      await music.play();
+      if (document.hidden) { music.pause(); return; }
+      const now = context.currentTime;
+      ambience.gain.cancelScheduledValues(now);
+      ambience.gain.setValueAtTime(0, now);
+      ambience.gain.linearRampToValueAtTime(memoryOpen ? .12 : .22, now + .18);
+    } catch (error) {
+      if (error.name === 'NotAllowedError' || error.name === 'AbortError') return;
+      status.textContent = 'Не удалось загрузить музыку. Попробуй обновить страницу.';
+      console.warn('Не удалось включить фоновую музыку.', error);
+    }
   }
   function stopBackground() {
-    clearInterval(backgroundTimer);
-    backgroundTimer = null;
+    music.pause();
     for (const oscillator of voices) { try { oscillator.stop(); } catch {} }
   }
   async function unlock() {
@@ -103,7 +89,7 @@ const LoveAudio = (() => {
   function enterUniverse() { inUniverse = true; startBackground(); }
   function setMemoryOpen(value) {
     memoryOpen = value;
-    if (context) ambience.gain.setTargetAtTime(value ? .25 : .55, context.currentTime, .5);
+    if (context) ambience.gain.setTargetAtTime(value ? .12 : .22, context.currentTime, .5);
   }
   document.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
