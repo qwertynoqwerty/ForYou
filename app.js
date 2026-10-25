@@ -137,7 +137,7 @@ function render(now) {
     if (interval > 0 && !modalThrottled) frameIntervals.push(interval);
     orbitTime += delta;
     introTime += delta;
-    if (dragPointer !== null) {
+    if (dragPointer !== null && !mobileRendering) {
       yaw = targetYaw;
       orbitYaw = targetYaw;
     } else {
@@ -184,6 +184,7 @@ function drawScene(stage) {
   if (heading.style.top !== headingTop) heading.style.top = headingTop;
   if (stage.title < 1 || heading.style.opacity !== '1') heading.style.opacity = String(stage.title);
   if (stage.details > 0) {
+    if (glyphRenderer) glyphRenderer.setView(view, pixelRatio);
     context.clearRect(0, 0, innerWidth, innerHeight);
     const previousDelta = frameDelta;
     frameDelta = phraseElapsed;
@@ -375,8 +376,15 @@ function releasePointer(event) {
   dragPointer = null;
   canvas.classList.remove('dragging');
 }
-canvas.addEventListener('pointerdown', event => {
+const dragSurface = glyphRenderer ? document.createElement('div') : canvas;
+if (glyphRenderer) {
+  dragSurface.style.cssText = 'position:fixed;inset:0;z-index:1;touch-action:none';
+  canvas.before(dragSurface);
+  dragSurface.append(canvas);
+}
+dragSurface.addEventListener('pointerdown', event => {
   if (!started || dialog.open || accessDialog.open || event.button !== 0) return;
+  if (glyphRenderer && event.target.closest('button, input, dialog')) return;
   dragPointer = event.pointerId;
   if (cards.includes(document.activeElement)) document.activeElement.blur();
   dragX = event.clientX;
@@ -384,15 +392,15 @@ canvas.addEventListener('pointerdown', event => {
   canvas.setPointerCapture(event.pointerId);
   canvas.classList.add('dragging');
 });
-canvas.addEventListener('pointermove', event => {
+dragSurface.addEventListener('pointermove', event => {
   if (dragPointer !== event.pointerId) return;
   targetYaw += (event.clientX - dragX) * .004;
   dragX = event.clientX;
   if (!isMoving()) { yaw = targetYaw; orbitYaw = targetYaw; }
   requestRender();
 });
-canvas.addEventListener('pointerup', releasePointer);
-canvas.addEventListener('pointercancel', releasePointer);
+dragSurface.addEventListener('pointerup', releasePointer);
+dragSurface.addEventListener('pointercancel', releasePointer);
 canvas.addEventListener('lostpointercapture', () => { dragPointer = null; canvas.classList.remove('dragging'); });
 document.getElementById('openButton').addEventListener('click', openAccess);
 accessForm.addEventListener('submit', async event => {

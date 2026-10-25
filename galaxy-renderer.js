@@ -1,9 +1,11 @@
 class GalaxyRenderer {
   constructor(canvas, heartOnly = false) {
     this.canvas = canvas;
+    this.heartOnly = heartOnly;
     this.gl = canvas.getContext('webgl', { alpha: heartOnly, antialias: false, powerPreference: 'high-performance' });
     if (!this.gl) throw new Error('WebGL недоступен в этом браузере.');
     const gl = this.gl;
+    const mobile = SceneMath.isMobileRendering();
     const vertex = `
       precision highp float;
       attribute vec3 aPosition;
@@ -124,8 +126,7 @@ class GalaxyRenderer {
         values.push(x, y, z, seed, kind, size, brightness);
       }
     };
-    const mobile = SceneMath.isMobileRendering();
-    const discCount = mobile ? 18000 : 54000;
+    const discCount = mobile ? 13500 : 54000;
     for (let i = 0; i < discCount; i++) {
       const radius = 18 + Math.pow(rng(), .72) * 730;
       const arm = i % 3 * Math.PI * 2 / 3;
@@ -140,15 +141,16 @@ class GalaxyRenderer {
       const fill = i % 5 ? 1 : .35 + rng() * .58;
       const x = (16 * Math.pow(Math.sin(angle), 3) * fill + Math.cos(cross) * tube) * 7.2;
       const y = (13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle)) * 7.2 * fill;
+      if (mobile && i % 10 === 0) continue;
       add(x, y + Math.sin(cross) * tube * 5, Math.sin(cross) * tube * 8, 1, 1.8 + rng() * 2.5, rng());
     }
-    for (let i = 0; i < 3600; i++) add((rng() - .5) * 4400, (rng() - .5) * 2300, (rng() - .5) * 1600, 2, 1.1 + rng() * 2.4, rng());
-    for (let i = 0; i < 1800; i++) {
+    for (let i = 0; i < (mobile ? 2400 : 3600); i++) add((rng() - .5) * 4400, (rng() - .5) * 2300, (rng() - .5) * 1600, 2, 1.1 + rng() * 2.4, rng());
+    for (let i = 0; i < (mobile ? 1200 : 1800); i++) {
       const angle = rng() * Math.PI * 2;
       const radius = Math.pow(rng(), .85) * 58;
       add(Math.cos(angle) * radius, (rng() - .5) * (4 + 8 * Math.exp(-radius / 55)), Math.sin(angle) * radius, 3, 1.15 + rng() * 1.8, rng());
     }
-    for (let i = 0; i < 640; i++) {
+    for (let i = 0; i < (mobile ? 480 : 640); i++) {
       const angle = rng() * Math.PI * 2;
       const elevation = (rng() - .5) * Math.PI;
       const radius = 150 + rng() * 850;
@@ -172,21 +174,57 @@ class GalaxyRenderer {
     else gl.clearColor(.006, .001, .002, 1);
   }
   resize(width, height, ratio) {
+    this.cropped = this.heartOnly && SceneMath.isMobileRendering();
+    this.ratio = ratio;
+    if (this.cropped) return;
+    this.canvas.style.left = '';
+    this.canvas.style.top = '';
+    this.canvas.style.width = '';
+    this.canvas.style.height = '';
     const pixelWidth = Math.round(width * ratio);
     const pixelHeight = Math.round(height * ratio);
     if (this.canvas.width !== pixelWidth) this.canvas.width = pixelWidth;
     if (this.canvas.height !== pixelHeight) this.canvas.height = pixelHeight;
-    this.ratio = ratio;
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
   }
   draw(view, time, progress, yaw, tint) {
     const gl = this.gl;
     const u = this.uniforms;
+    let left = 0;
+    let top = 0;
+    let width = view.width;
+    let height = view.height;
+    if (this.cropped) {
+      let right = -Infinity;
+      let bottom = -Infinity;
+      left = Infinity;
+      top = Infinity;
+      for (const x of [-160, 160]) for (const y of [-160, 160]) for (const z of [-160, 160]) {
+        const point = SceneMath.project(x, view.heartLift + y, z, view);
+        left = Math.min(left, point.x);
+        top = Math.min(top, point.y);
+        right = Math.max(right, point.x);
+        bottom = Math.max(bottom, point.y);
+      }
+      left = Math.max(0, Math.floor(left - 20));
+      top = Math.max(0, Math.floor(top - 20));
+      width = Math.max(1, Math.min(view.width, Math.ceil(right + 20)) - left);
+      height = Math.max(1, Math.min(view.height, Math.ceil(bottom + 20)) - top);
+      const pixelWidth = Math.round(width * this.ratio);
+      const pixelHeight = Math.round(height * this.ratio);
+      if (this.canvas.width !== pixelWidth) this.canvas.width = pixelWidth;
+      if (this.canvas.height !== pixelHeight) this.canvas.height = pixelHeight;
+      for (const [key, value] of Object.entries({ left, top, width, height })) {
+        const css = value + 'px';
+        if (this.canvas.style[key] !== css) this.canvas.style[key] = css;
+      }
+      gl.viewport(0, 0, pixelWidth, pixelHeight);
+    }
     gl.clear(gl.COLOR_BUFFER_BIT);
     if (this.groups.has(1) && progress <= .46) return;
     gl.useProgram(this.program);
-    gl.uniform2f(u.uViewport, view.width, view.height);
-    gl.uniform2f(u.uCenter, view.cx, view.cy);
+    gl.uniform2f(u.uViewport, width, height);
+    gl.uniform2f(u.uCenter, view.cx - left, view.cy - top);
     gl.uniform1f(u.uScale, view.scale);
     gl.uniform1f(u.uRatio, this.ratio);
     gl.uniform1f(u.uTime, time);
