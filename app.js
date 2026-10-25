@@ -137,13 +137,8 @@ function render(now) {
     if (interval > 0 && !modalThrottled) frameIntervals.push(interval);
     orbitTime += delta;
     introTime += delta;
-    if (dragPointer !== null && !mobileRendering) {
-      yaw = targetYaw;
-      orbitYaw = targetYaw;
-    } else {
-      yaw += (targetYaw - yaw) * (1 - Math.exp(-delta * 9));
-      orbitYaw += (yaw - orbitYaw) * (1 - Math.exp(-delta * 14));
-    }
+    yaw += (targetYaw - yaw) * (1 - Math.exp(-delta * 9));
+    orbitYaw += (yaw - orbitYaw) * (1 - Math.exp(-delta * 14));
   }
   if (view && targetView) {
     const blend = 1 - Math.exp(-Math.max(delta, .001) * 6);
