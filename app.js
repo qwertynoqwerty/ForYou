@@ -417,7 +417,10 @@ for (const modal of [dialog, accessDialog]) {
   modal.addEventListener('click', event => {
     if (modal === accessDialog || event.target !== modal) return;
     const rect = modal.getBoundingClientRect();
-    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return closeMemory();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
+      if (!memoryClosing) LoveAudio.play('press');
+      return closeMemory();
+    }
   });
   modal.addEventListener('keydown', event => {
     if (event.key !== 'Tab') return;
