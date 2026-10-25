@@ -215,3 +215,9 @@ body.red .scene-heading h2 { color: #ffafc2; }
   .invitation p, .access-dialog p, .scene-heading p { font-size: 13px; }
   .invitation .primary, .access-dialog .primary { font-size: 16px; min-height: 48px; padding: 12px 18px; }
 }
+
+.sound-toggle { position: fixed; z-index: 8; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); display: grid; place-items: center; width: 44px; height: 44px; padding: 11px; border: 1px solid #ffb4d040; border-radius: 50%; background: #24101fe6; color: #efc6d9; }
+.sound-toggle:hover { background: #412033; }
+.sound-toggle svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.sound-toggle[data-enabled="true"] .sound-muted, .sound-toggle[data-enabled="false"] .sound-waves { display: none; }
+dialog .sound-toggle { position: absolute; top: 8px; left: 8px; right: auto; background: transparent; border-color: transparent; }

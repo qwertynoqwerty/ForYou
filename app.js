@@ -287,6 +287,7 @@ let memoryEntrance = null;
 function closeMemory() {
   if (memoryClosing || !dialog.open) return Promise.resolve();
   memoryClosing = true;
+  LoveAudio.play('close');
   dialog.classList.add('is-closing');
   memoryEntrance?.commitStyles?.();
   memoryEntrance?.cancel?.();
@@ -311,12 +312,15 @@ function openMemory(index, trigger) {
   document.getElementById('memoryText').textContent = memory.text;
   MemoryMedia.open(memory);
   dialog.showModal();
+  LoveAudio.setMemoryOpen(true);
+  LoveAudio.play('open');
   memoryEntrance = dialog.animate([{ opacity: 0, transform: 'translateY(6px) scale(.99)' }, { opacity: 1, transform: 'translateY(0) scale(1)' }], { duration: 240, easing: 'ease-out', fill: 'forwards' });
   restartClock();
 }
 function start() {
   if (started) return;
   started = true;
+  LoveAudio.enterUniverse();
   if (!mediaPreloadStarted) { mediaPreloadStarted = true; MemoryMedia.preload(); }
   animated = true;
   paused = false;
@@ -335,6 +339,7 @@ function start() {
 async function openAccess() {
   if (accessTransition || started) return;
   accessTransition = true;
+  LoveAudio.play('welcome');
   welcome.inert = true;
   await waitForFade(welcome);
   welcome.hidden = true;
@@ -389,6 +394,7 @@ accessForm.addEventListener('submit', async event => {
   }
   accessTransition = true;
   document.getElementById('accessSubmit').disabled = true;
+  LoveAudio.play('success');
   try {
     localStorage.setItem(accessStorageKey, '1');
   } catch {
@@ -427,7 +433,7 @@ for (const modal of [dialog, accessDialog]) {
     else if (!elements.includes(document.activeElement)) { event.preventDefault(); (event.shiftKey ? last : first).focus(); }
   });
 }
-dialog.addEventListener('close', () => { if (lastTrigger && started) lastTrigger.focus({ preventScroll: true }); restartClock(); });
+dialog.addEventListener('close', () => { LoveAudio.setMemoryOpen(false); if (lastTrigger && started) lastTrigger.focus({ preventScroll: true }); restartClock(); });
 addEventListener('resize', resize);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { cancelAnimationFrame(frameId); frameId = 0; lastTime = 0; }
