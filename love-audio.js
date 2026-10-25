@@ -1,7 +1,8 @@
 const LoveAudio = (() => {
   const status = document.getElementById('audioStatus');
   const voices = new Set();
-  const chords = [[130.81, 164.81, 196, 246.94], [110, 130.81, 164.81, 196], [87.31, 130.81, 174.61, 220], [98, 146.83, 196, 246.94]];
+  const chords = [[261.63, 329.63, 392, 440], [174.61, 261.63, 349.23, 440], [220, 293.66, 349.23, 440], [196, 293.66, 392, 493.88]];
+  const melodies = [[523.25, 659.25, 783.99, 659.25, 587.33, 659.25, 523.25, null], [659.25, 698.46, 880, 783.99, 659.25, 587.33, 523.25, null], [587.33, 698.46, 880, 698.46, 659.25, 587.33, 523.25, null], [493.88, 587.33, 783.99, 659.25, 587.33, 493.88, 523.25, null]];
   let context;
   let output;
   let ambience;
@@ -28,7 +29,7 @@ const LoveAudio = (() => {
     ambience.gain.value = memoryOpen ? .25 : .55;
     const filter = context.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 1500;
+    filter.frequency.value = 4200;
     ambience.connect(filter);
     filter.connect(output);
   }
@@ -49,26 +50,28 @@ const LoveAudio = (() => {
     oscillator.start(start);
     oscillator.stop(start + duration + .05);
   }
-  function bell(frequency, start, level = .055) {
-    tone(frequency, start, 1.6, level, output);
-    tone(frequency * 2, start, .65, level * .16, output);
-    tone(frequency * 3, start, .3, level * .035, output);
+  function musicBox(frequency, start, level) {
+    tone(frequency, start, 1.45, level, ambience, .009);
+    tone(frequency * 2, start, .55, level * .12, ambience, .006);
+    tone(frequency * 3, start, .2, level * .018, ambience, .004);
   }
-  function playChord() {
+  function playPhrase() {
     if (!inUniverse || document.hidden || context.state !== 'running') return;
-    const start = context.currentTime + .05;
-    const chord = chords[chordIndex++ % chords.length];
-    chord.forEach((frequency, index) => {
-      tone(frequency, start + index * .12, 11, .018, ambience, 2.4);
-      tone(frequency * 1.002, start + index * .12, 11, .006, ambience, 2.4);
+    const start = context.currentTime + .01;
+    const index = chordIndex++ % chords.length;
+    const chord = chords[index];
+    chord.forEach((frequency, step) => {
+      tone(frequency, start + step * .025, 4.2, .008, ambience, .06);
+      musicBox(frequency * 2, start + step * .5, .014);
     });
-    tone(chord[2] * 4, start + 3.5, 2.2, .018, ambience, .02);
-    tone(chord[1] * 4, start + 5.8, 2.4, .012, ambience, .02);
+    melodies[index].forEach((frequency, step) => {
+      if (frequency) musicBox(frequency, start + step * .5, step === 0 ? .08 : .065);
+    });
   }
   function startBackground() {
     if (backgroundTimer || !inUniverse || document.hidden || context?.state !== 'running') return;
-    playChord();
-    backgroundTimer = setInterval(playChord, 8000);
+    playPhrase();
+    backgroundTimer = setInterval(playPhrase, 4000);
   }
   function stopBackground() {
     clearInterval(backgroundTimer);
@@ -96,7 +99,6 @@ const LoveAudio = (() => {
       tone(420, now, .11, .07, output, .003, 280);
       tone(840, now, .045, .008, output, .002, 560);
     }
-    if (kind === 'success') [523.25, 659.25, 783.99].forEach((note, index) => bell(note, now + index * .22));
   }
   function enterUniverse() { inUniverse = true; startBackground(); }
   function setMemoryOpen(value) {

@@ -391,7 +391,7 @@ accessForm.addEventListener('submit', async event => {
   }
   accessTransition = true;
   document.getElementById('accessSubmit').disabled = true;
-  LoveAudio.play('success');
+  LoveAudio.enterUniverse();
   try {
     localStorage.setItem(accessStorageKey, '1');
   } catch {
