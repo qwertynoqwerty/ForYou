@@ -114,12 +114,17 @@ class GalaxyRenderer {
     if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(this.program));
     gl.useProgram(this.program);
     const values = [];
+    this.groups = new Map();
     const rng = SceneMath.random(7421);
     const add = (x, y, z, kind, size, brightness) => {
       const seed = rng();
-      if ((kind === 1) === heartOnly) values.push(x, y, z, seed, kind, size, brightness);
+      if ((kind === 1) === heartOnly) {
+        if (!this.groups.has(kind)) this.groups.set(kind, { start: values.length / 7, count: 0 });
+        this.groups.get(kind).count++;
+        values.push(x, y, z, seed, kind, size, brightness);
+      }
     };
-    const mobile = innerWidth < 600;
+    const mobile = SceneMath.isMobileRendering();
     const discCount = mobile ? 18000 : 54000;
     for (let i = 0; i < discCount; i++) {
       const radius = 18 + Math.pow(rng(), .72) * 730;
@@ -178,6 +183,7 @@ class GalaxyRenderer {
     const gl = this.gl;
     const u = this.uniforms;
     gl.clear(gl.COLOR_BUFFER_BIT);
+    if (this.groups.has(1) && progress <= .46) return;
     gl.useProgram(this.program);
     gl.uniform2f(u.uViewport, view.width, view.height);
     gl.uniform2f(u.uCenter, view.cx, view.cy);
@@ -193,6 +199,9 @@ class GalaxyRenderer {
     gl.uniform2f(u.uPitchRotation, Math.cos(view.pitch), Math.sin(view.pitch));
     gl.uniform1f(u.uLift, view.heartLift);
     gl.uniform1f(u.uTint, tint);
-    gl.drawArrays(gl.POINTS, 0, this.count);
+    const stars = this.groups.get(2);
+    const flight = this.groups.get(4);
+    if (progress < 0 && stars) gl.drawArrays(gl.POINTS, stars.start, stars.count);
+    else gl.drawArrays(gl.POINTS, 0, progress >= .6 && flight ? flight.start : this.count);
   }
 }

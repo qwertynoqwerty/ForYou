@@ -1,5 +1,6 @@
 const canvas = document.getElementById('universe');
-const glyphRenderer = innerWidth < 600 ? new GlyphRenderer(canvas) : null;
+let mobileRendering = SceneMath.isMobileRendering();
+const glyphRenderer = mobileRendering ? new GlyphRenderer(canvas) : null;
 const context = glyphRenderer ? glyphRenderer.context : canvas.getContext('2d');
 const scene = document.getElementById('scene');
 const welcome = document.getElementById('welcome');
@@ -99,13 +100,14 @@ catch (error) { console.error(error); showRenderError(); }
 function resize() {
   targetView = layout(innerWidth, innerHeight);
   if (!view) view = { ...targetView };
-  pixelRatio = Math.min(devicePixelRatio || 1, innerWidth < 600 ? 2 : quality < .7 ? 1 : 1.5);
+  mobileRendering = SceneMath.isMobileRendering();
+  pixelRatio = Math.min(devicePixelRatio || 1, quality < .7 ? (mobileRendering ? 1.25 : 1) : 1.5);
   const pixelWidth = Math.round(innerWidth * pixelRatio);
   const pixelHeight = Math.round(innerHeight * pixelRatio);
   if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
   if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-  const particleRatio = innerWidth < 600 ? Math.min(devicePixelRatio || 1, quality < .7 ? 1.25 : 1.5) : pixelRatio;
+  const particleRatio = mobileRendering ? Math.min(devicePixelRatio || 1, quality < .7 ? 1 : 1.25) : pixelRatio;
   if (renderer) renderer.resize(innerWidth, innerHeight, particleRatio);
   if (heartRenderer) heartRenderer.resize(innerWidth, innerHeight, particleRatio);
   document.body.style.setProperty('--card-size', targetView.cardSize + 'px');
@@ -124,14 +126,15 @@ function isMoving() {
 }
 function render(now) {
   frameId = 0;
-  if (innerWidth < 600 && (dialog.open || accessDialog.open) && lastTime && now - lastTime < 30) { requestRender(); return; }
+  const modalThrottled = mobileRendering && (dialog.open || accessDialog.open);
+  if (modalThrottled && lastTime && now - lastTime < 30) { requestRender(); return; }
   const begin = performance.now();
   const interval = lastTime ? now - lastTime : 0;
   const delta = Math.min(interval / 1000, .04);
   frameDelta = delta;
   lastTime = now;
   if (isMoving()) {
-    if (interval > 0) frameIntervals.push(interval);
+    if (interval > 0 && !modalThrottled) frameIntervals.push(interval);
     orbitTime += delta;
     introTime += delta;
     yaw += (targetYaw - yaw) * (1 - Math.exp(-delta * 9));
@@ -194,8 +197,7 @@ function drawScene(stage) {
     current.x = view.cx + (position.x - view.cx) * fly;
     current.y = view.cy + (position.y - view.cy) * fly;
     const size = clamp(position.depth, .92, 1.08) * (.2 + stage.details * .8);
-    button.style.transform = `translate3d(${current.x - view.cardSize / 2}px,${current.y - view.cardSize / 2}px,0)`;
-    button.style.setProperty('--sticker-scale', size.toFixed(3));
+    button.style.transform = `translate3d(${current.x - view.cardSize / 2}px,${current.y - view.cardSize / 2}px,0) scale(${size.toFixed(3)})`;
     const zIndex = String(Math.round(position.depth * 100));
     if (button.style.zIndex !== zIndex) button.style.zIndex = zIndex;
     const cardOpacity = stage.details * (position.visibility ?? 1);
@@ -206,6 +208,10 @@ function drawScene(stage) {
     }
   });
   const ready = stage.progress >= 1;
+  if (ready && !mediaPreloadStarted && !mobileRendering) {
+    mediaPreloadStarted = true;
+    MemoryMedia.preload();
+  }
   const phase = ready ? 'ready' : 'revealing';
   if (scene.dataset.phase !== phase) scene.dataset.phase = phase;
   if (stage.progress >= .17 && !welcome.hidden) welcome.hidden = true;
@@ -263,6 +269,7 @@ function drawPhrases(opacity, camera) {
     const desiredOpacity = phraseReveal * front * smooth(.0, .45, legibility) * .78;
     const response = 1 - Math.exp(-frameDelta * 4);
     phraseOpacity[index] = (phraseOpacity[index] || 0) + (desiredOpacity - (phraseOpacity[index] || 0)) * response;
+    if (phraseOpacity[index] < .002) continue;
     for (const { glyph, p, scale, rotation } of prepared) {
       if (mobile || glyphRenderer) {
         const cosine = Math.cos(rotation) * pixelRatio;
@@ -319,7 +326,6 @@ function start() {
   if (started) return;
   started = true;
   LoveAudio.enterUniverse();
-  if (!mediaPreloadStarted) { mediaPreloadStarted = true; MemoryMedia.preload(); }
   animated = true;
   paused = false;
   orbitTime = 0;

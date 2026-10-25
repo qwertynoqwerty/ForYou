@@ -1,4 +1,5 @@
 const SceneMath = (() => {
+  const isMobileRendering = () => innerWidth < 600 || (matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) < 600);
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const smooth = (start, end, value) => {
     const t = clamp((value - start) / (end - start), 0, 1);
@@ -88,6 +89,6 @@ const SceneMath = (() => {
       return (state >>> 0) / 4294967296;
     };
   }
-  return { clamp, smooth, layout, project, stages, arrangeCards, random };
+  return { clamp, smooth, layout, project, stages, arrangeCards, random, isMobileRendering };
 })();
 if (typeof module !== 'undefined') module.exports = SceneMath;
