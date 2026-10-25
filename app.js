@@ -101,13 +101,13 @@ function resize() {
   targetView = layout(innerWidth, innerHeight);
   if (!view) view = { ...targetView };
   mobileRendering = SceneMath.isMobileRendering();
-  pixelRatio = Math.min(devicePixelRatio || 1, quality < .7 ? (mobileRendering ? 1.25 : 1) : 1.5);
+  pixelRatio = Math.min(devicePixelRatio || 1, mobileRendering ? 2 : quality < .7 ? 1 : 1.5);
   const pixelWidth = Math.round(innerWidth * pixelRatio);
   const pixelHeight = Math.round(innerHeight * pixelRatio);
   if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
   if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-  const particleRatio = mobileRendering ? Math.min(devicePixelRatio || 1, quality < .7 ? 1 : 1.25) : pixelRatio;
+  const particleRatio = mobileRendering ? Math.min(devicePixelRatio || 1, 1.5) : pixelRatio;
   if (renderer) renderer.resize(innerWidth, innerHeight, particleRatio);
   if (heartRenderer) heartRenderer.resize(innerWidth, innerHeight, particleRatio);
   document.body.style.setProperty('--card-size', targetView.cardSize + 'px');
@@ -137,8 +137,13 @@ function render(now) {
     if (interval > 0 && !modalThrottled) frameIntervals.push(interval);
     orbitTime += delta;
     introTime += delta;
-    yaw += (targetYaw - yaw) * (1 - Math.exp(-delta * 9));
-    orbitYaw += (yaw - orbitYaw) * (1 - Math.exp(-delta * 14));
+    if (dragPointer !== null) {
+      yaw = targetYaw;
+      orbitYaw = targetYaw;
+    } else {
+      yaw += (targetYaw - yaw) * (1 - Math.exp(-delta * 9));
+      orbitYaw += (yaw - orbitYaw) * (1 - Math.exp(-delta * 14));
+    }
   }
   if (view && targetView) {
     const blend = 1 - Math.exp(-Math.max(delta, .001) * 6);
@@ -208,7 +213,7 @@ function drawScene(stage) {
     }
   });
   const ready = stage.progress >= 1;
-  if (ready && !mediaPreloadStarted && !mobileRendering) {
+  if (ready && !mediaPreloadStarted) {
     mediaPreloadStarted = true;
     MemoryMedia.preload();
   }
@@ -259,21 +264,27 @@ function drawPhrases(opacity, camera) {
       const p = phraseProject(Math.cos(a) * radius, 14, Math.sin(a) * radius, camera, orbitYaw, item.p);
       const next = phraseProject(Math.cos(a + direction * .008) * radius, 14, Math.sin(a + direction * .008) * radius, camera, orbitYaw, projectedNext);
       const scale = worldScale * view.scale * Math.min(p.depth, 1.4);
-      const rotation = Math.atan2(next.y - p.y, next.x - p.x);
-      legibility = Math.min(legibility, Math.cos(rotation));
+      const dx = next.x - p.x;
+      const dy = next.y - p.y;
+      const length = Math.hypot(dx, dy);
+      const cosine = length ? dx / length : 1;
+      const sine = length ? dy / length : 0;
+      legibility = Math.min(legibility, cosine);
       item.p = p;
       item.scale = scale;
-      item.rotation = rotation;
+      item.rotation = glyphRenderer ? 0 : Math.atan2(dy, dx);
+      item.cosine = cosine;
+      item.sine = sine;
       pen += glyph.advance;
     }
     const desiredOpacity = phraseReveal * front * smooth(.0, .45, legibility) * .78;
     const response = 1 - Math.exp(-frameDelta * 4);
     phraseOpacity[index] = (phraseOpacity[index] || 0) + (desiredOpacity - (phraseOpacity[index] || 0)) * response;
     if (phraseOpacity[index] < .002) continue;
-    for (const { glyph, p, scale, rotation } of prepared) {
+    for (const { glyph, p, scale, rotation, cosine: rotationCosine, sine: rotationSine } of prepared) {
       if (mobile || glyphRenderer) {
-        const cosine = Math.cos(rotation) * pixelRatio;
-        const sine = Math.sin(rotation) * pixelRatio;
+        const cosine = rotationCosine * pixelRatio;
+        const sine = rotationSine * pixelRatio;
         context.setTransform(cosine, sine, -sine, cosine, p.x * pixelRatio, p.y * pixelRatio);
         context.globalAlpha = phraseOpacity[index];
         context.drawImage(glyph.image, -glyph.image.width * scale / 2, -glyph.image.height * scale / 2, glyph.image.width * scale, glyph.image.height * scale);
