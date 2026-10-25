@@ -53,7 +53,7 @@ const LoveAudio = (() => {
       const now = context.currentTime;
       ambience.gain.cancelScheduledValues(now);
       ambience.gain.setValueAtTime(0, now);
-      ambience.gain.linearRampToValueAtTime(memoryOpen ? .12 : .22, now + .18);
+      ambience.gain.linearRampToValueAtTime(memoryOpen ? .035 : .065, now + .18);
     } catch (error) {
       if (error.name === 'NotAllowedError' || error.name === 'AbortError') return;
       status.textContent = 'Не удалось загрузить музыку. Попробуй обновить страницу.';
@@ -89,7 +89,7 @@ const LoveAudio = (() => {
   function enterUniverse() { inUniverse = true; startBackground(); }
   function setMemoryOpen(value) {
     memoryOpen = value;
-    if (context) ambience.gain.setTargetAtTime(value ? .12 : .22, context.currentTime, .5);
+    if (context) ambience.gain.setTargetAtTime(value ? .035 : .065, context.currentTime, .5);
   }
   document.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
