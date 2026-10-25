@@ -403,7 +403,7 @@ accessForm.addEventListener('submit', async event => {
   event.preventDefault();
   const value = passwordInput.value.trim();
   if (value !== LoveContent.accessPassword) {
-    accessError.textContent = value ? 'Кажется, это не наш секрет. Попробуй ещё раз.' : 'Введи наш маленький секрет.';
+    accessError.textContent = value ? 'Кажется, этот ключ не подходит. Попробуй ещё раз.' : 'Введи этот ключ.';
     passwordInput.setAttribute('aria-invalid', 'true');
     passwordInput.focus();
     passwordInput.select();
