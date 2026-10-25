@@ -66,7 +66,7 @@ const LoveAudio = (() => {
   function startMenu() {
     if (menuTimer || inUniverse || document.hidden || context?.state !== 'running') return;
     menuGain.gain.cancelScheduledValues(context.currentTime);
-    menuGain.gain.setTargetAtTime(.055, context.currentTime, .08);
+    menuGain.gain.setTargetAtTime(.11, context.currentTime, .08);
     playMenuPhrase();
     menuTimer = setInterval(playMenuPhrase, 8000);
   }
@@ -121,7 +121,7 @@ const LoveAudio = (() => {
       tone(840, now, .045, .008, output, .002, 560);
     }
   }
-  function enterUniverse() { inUniverse = true; stopMenu(); startBackground(); }
+  function enterUniverse() { inUniverse = true; stopMenu(); unlock(); }
   function setMemoryOpen(value) {
     memoryOpen = value;
     if (context) ambience.gain.setTargetAtTime(value ? .035 : .065, context.currentTime, .5);
